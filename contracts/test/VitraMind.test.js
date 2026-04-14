@@ -219,3 +219,19 @@ describe("RewardsEngine", () => {
     ).to.be.revertedWith("Zero cUSD");
   });
 });
+
+// ── contractBalance helper ────────────────────────────────────────────────────
+describe("RewardsEngine.contractBalance", () => {
+  it("reflects deposited cUSD", async () => {
+    const [owner, oracle] = await ethers.getSigners();
+    const mockCUSD = await ethers.deployContract("MockCUSD");
+    const contract = await ethers.deployContract("RewardsEngine", [
+      await mockCUSD.getAddress(), oracle.address,
+    ]);
+    const ONE = ethers.parseEther("1");
+    await mockCUSD.mint(owner.address, ONE * 3n);
+    await mockCUSD.connect(owner).approve(await contract.getAddress(), ONE * 3n);
+    await contract.connect(owner).deposit(ONE * 3n);
+    expect(await contract.contractBalance()).to.equal(ONE * 3n);
+  });
+});
