@@ -78,3 +78,75 @@ describe("ProofRegistry", () => {
       .to.be.false;
   });
 });
+
+describe("GrowthNFT", () => {
+  let contract, owner, oracle, user, other;
+
+  beforeEach(async () => {
+    [owner, oracle, user, other] = await ethers.getSigners();
+    contract = await ethers.deployContract("GrowthNFT", [oracle.address]);
+  });
+
+  it("mints NFT with initial growth data", async () => {
+    await contract.connect(oracle).mint(user.address, "ipfs://initial");
+    expect(await contract.ownerOf(1)).to.equal(user.address);
+    const d = await contract.growthData(1);
+    expect(d.level).to.equal(1);
+    expect(d.metadataURI).to.equal("ipfs://initial");
+  });
+
+  it("prevents double minting", async () => {
+    await contract.connect(oracle).mint(user.address, "ipfs://a");
+    await expect(contract.connect(oracle).mint(user.address, "ipfs://b"))
+      .to.be.revertedWith("Already minted");
+  });
+
+  it("updates growth and emits LevelUp", async () => {
+    await contract.connect(oracle).mint(user.address, "ipfs://v1");
+    await expect(contract.connect(oracle).updateGrowth(user.address, 5, 30, 50, "ipfs://v2"))
+      .to.emit(contract, "LevelUp").withArgs(1, 5);
+    expect((await contract.growthData(1)).level).to.equal(5);
+  });
+
+  it("does not emit LevelUp when level unchanged", async () => {
+    await contract.connect(oracle).mint(user.address, "ipfs://v1");
+    const tx = await contract.connect(oracle).updateGrowth(user.address, 1, 5, 5, "ipfs://v2");
+    const receipt = await tx.wait();
+    const levelUpEvents = receipt.logs.filter(l => l.fragment?.name === "LevelUp");
+    expect(levelUpEvents.length).to.equal(0);
+  });
+
+  it("blocks transfer (soulbound)", async () => {
+    await contract.connect(oracle).mint(user.address, "ipfs://v1");
+    await expect(contract.connect(user).transferFrom(user.address, other.address, 1))
+      .to.be.revertedWith("Soulbound: non-transferable");
+  });
+
+  it("blocks safeTransferFrom (soulbound)", async () => {
+    await contract.connect(oracle).mint(user.address, "ipfs://v1");
+    await expect(
+      contract.connect(user)["safeTransferFrom(address,address,uint256)"](user.address, other.address, 1)
+    ).to.be.revertedWith("Soulbound: non-transferable");
+  });
+
+  it("blocks approve (soulbound)", async () => {
+    await contract.connect(oracle).mint(user.address, "ipfs://v1");
+    await expect(contract.connect(user).approve(other.address, 1))
+      .to.be.revertedWith("Soulbound: approvals disabled");
+  });
+
+  it("blocks setApprovalForAll (soulbound)", async () => {
+    await expect(contract.connect(user).setApprovalForAll(other.address, true))
+      .to.be.revertedWith("Soulbound: approvals disabled");
+  });
+
+  it("only oracle can mint", async () => {
+    await expect(contract.connect(other).mint(user.address, "ipfs://x"))
+      .to.be.revertedWith("Not oracle");
+  });
+
+  it("owner can update oracle", async () => {
+    await expect(contract.connect(owner).setOracle(other.address))
+      .to.emit(contract, "OracleUpdated").withArgs(oracle.address, other.address);
+  });
+});
