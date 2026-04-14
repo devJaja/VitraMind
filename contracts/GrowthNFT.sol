@@ -21,6 +21,8 @@ contract GrowthNFT is ERC721, Ownable {
     address public oracle;
 
     event Minted(address indexed user, uint256 indexed tokenId);
+    event LevelUp(uint256 indexed tokenId, uint8 newLevel);
+    event MetadataUpdated(uint256 indexed tokenId, string uri);
 
     modifier onlyOracle() {
         require(msg.sender == oracle, "Not oracle");
@@ -40,6 +42,25 @@ contract GrowthNFT is ERC721, Ownable {
         tokenOfOwner[user] = tokenId;
         growthData[tokenId] = GrowthData(1, 0, 0, block.timestamp, metadataURI);
         emit Minted(user, tokenId);
+    }
+
+    function updateGrowth(
+        address user,
+        uint8   newLevel,
+        uint32  streakDays,
+        uint32  totalLogs,
+        string calldata metadataURI
+    ) external onlyOracle {
+        uint256 tokenId = tokenOfOwner[user];
+        require(tokenId != 0, "No NFT");
+        require(newLevel >= 1, "Invalid level");
+        GrowthData storage d = growthData[tokenId];
+        if (newLevel > d.level) emit LevelUp(tokenId, newLevel);
+        d.level       = newLevel;
+        d.streakDays  = streakDays;
+        d.totalLogs   = totalLogs;
+        d.metadataURI = metadataURI;
+        emit MetadataUpdated(tokenId, metadataURI);
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
