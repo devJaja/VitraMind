@@ -95,11 +95,11 @@ What does NOT go on-chain:
 ❌ Mood scores
 ❌ Sensitive data
 
-🛡️ Privacy by Design
+- Privacy by Design
 All user data remains off-chain
 On-chain entries are only commitments/proofs
 Optional encrypted IPFS storage
-📊 Dashboard & Analytics
+- Dashboard & Analytics
 Mood charts
 Habit consistency reports
 Insight history
@@ -173,17 +173,17 @@ Dashboard updates
 Simple, seamless, mobile-first.
 
 🚀 Roadmap
-✅ Phase 1 — MVP
+- Phase 1 — MVP
 Daily logs
 Mood tracking
 AI insights
 Celo proof registry
-🚧 Phase 2 — Full Features
+- Phase 2 — Full Features
 Habit analytics
 Insight anchoring
 Growth NFT
 Streak proofs
-🔮 Phase 3 — Advanced
+- Phase 3 — Advanced
 Zero-knowledge proofs
 Encrypted IPFS export
 Cross-app growth identity
@@ -200,7 +200,7 @@ Storage: Local + optional encrypted IPFS
 
 ⚙️ Setup & Installation
 1️⃣ Clone the monorepo
-git clone https://github.com/your-org/vitramind
+git clone https://github.com/devjaja/vitramind
 cd vitramind
 2️⃣ Install Flutter dependencies
 flutter pub get
