@@ -150,3 +150,72 @@ describe("GrowthNFT", () => {
       .to.emit(contract, "OracleUpdated").withArgs(oracle.address, other.address);
   });
 });
+
+describe("RewardsEngine", () => {
+  let contract, mockCUSD, owner, oracle, user, other;
+  const ONE = ethers.parseEther("1");
+
+  beforeEach(async () => {
+    [owner, oracle, user, other] = await ethers.getSigners();
+    mockCUSD = await ethers.deployContract("MockCUSD");
+    contract = await ethers.deployContract("RewardsEngine", [
+      await mockCUSD.getAddress(),
+      oracle.address,
+    ]);
+  });
+
+  it("awards points", async () => {
+    await expect(contract.connect(oracle).awardPoints(user.address, 100, "7-day streak"))
+      .to.emit(contract, "PointsAwarded").withArgs(user.address, 100, "7-day streak");
+    expect((await contract.rewards(user.address)).points).to.equal(100);
+  });
+
+  it("accumulates points across calls", async () => {
+    await contract.connect(oracle).awardPoints(user.address, 50, "a");
+    await contract.connect(oracle).awardPoints(user.address, 75, "b");
+    expect((await contract.rewards(user.address)).points).to.equal(125);
+  });
+
+  it("awards badge and is idempotent", async () => {
+    await expect(contract.connect(oracle).awardBadge(user.address, 1))
+      .to.emit(contract, "BadgeEarned").withArgs(user.address, 1);
+    await expect(contract.connect(oracle).awardBadge(user.address, 1))
+      .to.not.emit(contract, "BadgeEarned");
+    expect(await contract.badges(1, user.address)).to.be.true;
+  });
+
+  it("distributes cUSD reward", async () => {
+    await mockCUSD.mint(owner.address, ONE * 10n);
+    await mockCUSD.connect(owner).approve(await contract.getAddress(), ONE * 10n);
+    await contract.connect(owner).deposit(ONE * 5n);
+    await expect(contract.connect(oracle).rewardCUSD(user.address, ONE))
+      .to.emit(contract, "CUSDRewarded").withArgs(user.address, ONE);
+    expect(await mockCUSD.balanceOf(user.address)).to.equal(ONE);
+  });
+
+  it("reverts rewardCUSD when underfunded", async () => {
+    await expect(contract.connect(oracle).rewardCUSD(user.address, ONE))
+      .to.be.revertedWith("Insufficient funds");
+  });
+
+  it("only oracle can award points", async () => {
+    await expect(contract.connect(other).awardPoints(user.address, 10, "x"))
+      .to.be.revertedWith("Not oracle");
+  });
+
+  it("reverts awardPoints with zero amount", async () => {
+    await expect(contract.connect(oracle).awardPoints(user.address, 0, "x"))
+      .to.be.revertedWith("Zero points");
+  });
+
+  it("owner can update oracle", async () => {
+    await expect(contract.connect(owner).setOracle(other.address))
+      .to.emit(contract, "OracleUpdated").withArgs(oracle.address, other.address);
+  });
+
+  it("reverts constructor with zero cUSD address", async () => {
+    await expect(
+      ethers.deployContract("RewardsEngine", [ethers.ZeroAddress, oracle.address])
+    ).to.be.revertedWith("Zero cUSD");
+  });
+});
