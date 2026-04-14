@@ -8,12 +8,18 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @title RewardsEngine
 /// @notice Distributes cUSD rewards and tracks points/badges for streaks & achievements.
 ///         Oracle (Serverpod backend) triggers payouts after verifying off-chain proofs.
+/// @dev    Owner pre-funds the contract with cUSD; oracle calls rewardCUSD() per user.
+///         Points and badges are tracked on-chain for transparency but carry no token value.
 contract RewardsEngine is Ownable {
     using SafeERC20 for IERC20;
 
+    /// @notice The cUSD token used for rewards (immutable after deploy)
     IERC20 public immutable cUSD;
+
+    /// @notice Trusted oracle address — only this address can trigger rewards
     address public oracle;
 
+    /// @notice Aggregated reward stats per user
     struct UserRewards {
         uint256 points;
         uint256 claimedCUSD;
@@ -21,6 +27,8 @@ contract RewardsEngine is Ownable {
     }
 
     mapping(address => UserRewards) public rewards;
+
+    /// @dev badgeId => user => earned
     mapping(uint256 => mapping(address => bool)) public badges;
 
     event PointsAwarded(address indexed user, uint256 points, string reason);
@@ -42,6 +50,12 @@ contract RewardsEngine is Ownable {
         oracle = _oracle;
     }
 
+    // ── Oracle actions ────────────────────────────────────────────────────────
+
+    /// @notice Award points for a streak or achievement (no token transfer)
+    /// @param user   Recipient address
+    /// @param points Number of points to award (must be > 0)
+    /// @param reason Human-readable reason string (stored in event only)
     function awardPoints(address user, uint256 points, string calldata reason) external onlyOracle {
         require(user   != address(0), "Zero address");
         require(points  > 0,          "Zero points");
@@ -49,6 +63,9 @@ contract RewardsEngine is Ownable {
         emit PointsAwarded(user, points, reason);
     }
 
+    /// @notice Award a badge to a user (idempotent — no revert on duplicate)
+    /// @param user    Recipient address
+    /// @param badgeId Unique badge identifier
     function awardBadge(address user, uint256 badgeId) external onlyOracle {
         require(user != address(0), "Zero address");
         if (!badges[badgeId][user]) {
@@ -57,6 +74,9 @@ contract RewardsEngine is Ownable {
         }
     }
 
+    /// @notice Transfer cUSD reward to a user
+    /// @param user   Recipient address
+    /// @param amount Amount of cUSD (18 decimals)
     function rewardCUSD(address user, uint256 amount) external onlyOracle {
         require(user   != address(0), "Zero address");
         require(amount  > 0,          "Zero amount");
@@ -67,12 +87,16 @@ contract RewardsEngine is Ownable {
         emit CUSDRewarded(user, amount);
     }
 
+    // ── Owner funding ─────────────────────────────────────────────────────────
+
+    /// @notice Deposit cUSD into the contract to fund future rewards
     function deposit(uint256 amount) external onlyOwner {
         require(amount > 0, "Zero amount");
         cUSD.safeTransferFrom(msg.sender, address(this), amount);
         emit Deposited(msg.sender, amount);
     }
 
+    /// @notice Withdraw unspent cUSD back to owner
     function withdraw(uint256 amount) external onlyOwner {
         require(amount > 0, "Zero amount");
         require(cUSD.balanceOf(address(this)) >= amount, "Insufficient funds");
@@ -80,6 +104,14 @@ contract RewardsEngine is Ownable {
         emit Withdrawn(msg.sender, amount);
     }
 
+    /// @notice Returns the current cUSD balance held by this contract
+    function contractBalance() external view returns (uint256) {
+        return cUSD.balanceOf(address(this));
+    }
+
+    // ── Admin ─────────────────────────────────────────────────────────────────
+
+    /// @notice Update the oracle address
     function setOracle(address _oracle) external onlyOwner {
         require(_oracle != address(0), "Zero oracle");
         emit OracleUpdated(oracle, _oracle);
