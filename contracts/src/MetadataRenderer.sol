@@ -7,7 +7,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 /// @title MetadataRenderer
 /// @notice Builds deterministic IPFS metadata URIs for GrowthNFT based on level tiers.
 ///         The oracle pins the actual JSON to IPFS; this contract maps level → CID.
-/// @dev    Levels 1-10 = Seedling, 11-25 = Sprout, 26-50 = Bloom, 51-75 = Flourish, 76-100 = Transcendent
+/// @dev    Tier boundaries: 1=Seedling, 11=Sprout, 26=Bloom, 51=Flourish, 76=Transcendent.
+///         Owner calls setTierCID() after pinning each tier's metadata folder to IPFS.
+///         URI format: ipfs://<CID>/<tokenId>.json
 contract MetadataRenderer is Ownable {
     using Strings for uint256;
 
