@@ -24,7 +24,7 @@ describe("StreakVerifier", () => {
     const hash = ethers.keccak256(ethers.toUtf8Bytes("streak-7"));
     await contract.connect(oracle).anchorStreak(user.address, hash, 7);
     const entry = await contract.latestStreak(user.address);
-    expect(entry.streakCount).to.equal(7);
+    expect(entry.currentStreak).to.equal(7);
     expect(entry.proofHash).to.equal(hash);
   });
 
@@ -64,6 +64,12 @@ describe("StreakVerifier", () => {
   it("reverts latestStreak with no entries", async () => {
     await expect(contract.latestStreak(user.address)).to.be.revertedWith("No streaks");
   });
+
+  it("oracle can rotate oracle address", async () => {
+    await expect(contract.connect(oracle).setOracle(other.address))
+      .to.emit(contract, "OracleUpdated").withArgs(oracle.address, other.address);
+    expect(await contract.oracle()).to.equal(other.address);
+  });
 });
 
 // ─── MetadataRenderer ────────────────────────────────────────────────────────
@@ -101,6 +107,11 @@ describe("MetadataRenderer", () => {
   it("reverts setTierCID with empty CID", async () => {
     await expect(contract.connect(owner).setTierCID(1, ""))
       .to.be.revertedWith("Empty CID");
+  });
+
+  it("reverts setTierCID with invalid tier", async () => {
+    await expect(contract.connect(owner).setTierCID(42, "QmX"))
+      .to.be.revertedWith("Invalid tier");
   });
 
   it("only owner can set CID", async () => {
@@ -159,6 +170,12 @@ describe("AnalyticsRegistry", () => {
     await expect(contract.connect(other).anchorSnapshot(user.address, ethers.keccak256(ethers.toUtf8Bytes("x")), WEEKLY))
       .to.be.revertedWith("Not oracle");
   });
+
+  it("oracle can rotate oracle address", async () => {
+    await expect(contract.connect(oracle).setOracle(other.address))
+      .to.emit(contract, "OracleUpdated").withArgs(oracle.address, other.address);
+    expect(await contract.oracle()).to.equal(other.address);
+  });
 });
 
 // ─── RewardsEngine streak tiers ──────────────────────────────────────────────
@@ -201,6 +218,14 @@ describe("RewardsEngine — streak rewards", () => {
     await contract.connect(oracle).rewardStreak(user.address, 7);
     await expect(contract.connect(oracle).rewardStreak(user.address, 7))
       .to.be.revertedWith("No new tier reached");
+  });
+
+  it("pays all crossed tiers when jumping from 0 to 100 days", async () => {
+    // Should receive tier1 + tier2 + tier3 = 0.5 + 2 + 10 = 12.5 cUSD
+    await expect(contract.connect(oracle).rewardStreak(user.address, 100))
+      .to.emit(contract, "StreakRewardPaid")
+      .withArgs(user.address, 100, ethers.parseEther("12.5"));
+    expect(await mockCUSD.balanceOf(user.address)).to.equal(ethers.parseEther("12.5"));
   });
 
   it("owner can update streak reward amounts", async () => {

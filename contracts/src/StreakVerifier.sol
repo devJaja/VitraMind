@@ -4,13 +4,13 @@ pragma solidity ^0.8.27;
 /// @title StreakVerifier
 /// @notice Anchors habit streak proofs on-chain with cooldown enforcement.
 ///         Oracle submits a streak proof once per day per user; contract enforces
-///         the 24-hour window so streaks cannot be double-counted.
+///         the 23-hour window so streaks cannot be double-counted.
 /// @dev    Streak continuity is verified off-chain by the oracle. This contract
 ///         only enforces submission rate and stores the commitment.
 contract StreakVerifier {
     struct StreakEntry {
-        bytes32 proofHash;   // keccak256(userId + date + habitIds)
-        uint32  streakCount; // cumulative streak days at time of submission
+        bytes32 proofHash;    // keccak256(userId + date + habitIds)
+        uint32  currentStreak; // cumulative streak days at time of submission
         uint256 submittedAt;
     }
 
@@ -28,9 +28,10 @@ contract StreakVerifier {
     event StreakAnchored(
         address indexed user,
         bytes32 indexed proofHash,
-        uint32  streakCount,
+        uint32  currentStreak,
         uint256 timestamp
     );
+    event OracleUpdated(address indexed oldOracle, address indexed newOracle);
 
     modifier onlyOracle() {
         require(msg.sender == oracle, "Not oracle");
@@ -47,19 +48,16 @@ contract StreakVerifier {
     /// @param proofHash     keccak256 commitment of the streak data
     /// @param currentStreak Cumulative streak day count
     function anchorStreak(address user, bytes32 proofHash, uint32 currentStreak) external onlyOracle {
-        require(user      != address(0),  "Zero address");
-        require(proofHash != bytes32(0),  "Invalid hash");
-        require(currentStreak > 0,        "Zero streak");
-        require(
-            block.timestamp >= lastStreakAt[user] + COOLDOWN,
-            "Cooldown active"
-        );
+        require(user         != address(0), "Zero address");
+        require(proofHash    != bytes32(0), "Invalid hash");
+        require(currentStreak > 0,          "Zero streak");
+        require(block.timestamp >= lastStreakAt[user] + COOLDOWN, "Cooldown active");
         lastStreakAt[user] = block.timestamp;
         _streaks[user].push(StreakEntry(proofHash, currentStreak, block.timestamp));
         emit StreakAnchored(user, proofHash, currentStreak, block.timestamp);
     }
 
-    /// @notice Returns the current streak entry count for a user
+    /// @notice Returns the number of streak entries for a user
     function streakCount(address user) external view returns (uint256) {
         return _streaks[user].length;
     }
@@ -75,5 +73,12 @@ contract StreakVerifier {
     function getStreak(address user, uint256 index) external view returns (StreakEntry memory) {
         require(index < _streaks[user].length, "Out of bounds");
         return _streaks[user][index];
+    }
+
+    /// @notice Update the oracle address (owner-equivalent: only current oracle can rotate)
+    function setOracle(address _oracle) external onlyOracle {
+        require(_oracle != address(0), "Zero oracle");
+        emit OracleUpdated(oracle, _oracle);
+        oracle = _oracle;
     }
 }

@@ -106,9 +106,8 @@ contract GrowthNFT is ERC721, Ownable {
     // ── Metadata ──────────────────────────────────────────────────────────────
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        require(ownerOf(tokenId) != address(0), "Nonexistent token");
+        _requireOwned(tokenId); // reverts with ERC721NonexistentToken if not minted
         GrowthData storage d = growthData[tokenId];
-        // Live renderer resolution if available
         if (address(renderer) != address(0)) {
             return renderer.tokenURI(d.level, tokenId);
         }

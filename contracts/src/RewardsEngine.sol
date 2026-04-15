@@ -83,7 +83,7 @@ contract RewardsEngine is Ownable {
         emit CUSDRewarded(user, amount);
     }
 
-    /// @notice Trigger streak milestone reward if user qualifies for a new tier
+    /// @notice Trigger streak milestone reward for all newly crossed tiers
     /// @param user       User address
     /// @param streakDays Current streak day count (verified off-chain by oracle)
     function rewardStreak(address user, uint32 streakDays) external onlyOracle {
@@ -94,7 +94,10 @@ contract RewardsEngine is Ownable {
         uint256 amount = _streakRewardAmount(streakDays, r.highestStreakRewarded);
         require(amount > 0, "No new tier reached");
 
-        r.highestStreakRewarded = streakDays;
+        // Record the highest streak seen so each tier is only paid once
+        if (streakDays > r.highestStreakRewarded) {
+            r.highestStreakRewarded = streakDays;
+        }
         _transferReward(user, amount);
         emit StreakRewardPaid(user, streakDays, amount);
     }
@@ -142,11 +145,12 @@ contract RewardsEngine is Ownable {
         cUSD.safeTransfer(user, amount);
     }
 
-    /// @dev Returns the reward amount for the highest new tier reached
+    /// @dev Returns the cumulative reward for all tiers newly crossed between previous and current
     function _streakRewardAmount(uint32 current, uint32 previous) internal view returns (uint256) {
-        if (current >= STREAK_TIER_3 && previous < STREAK_TIER_3) return streakReward3;
-        if (current >= STREAK_TIER_2 && previous < STREAK_TIER_2) return streakReward2;
-        if (current >= STREAK_TIER_1 && previous < STREAK_TIER_1) return streakReward1;
-        return 0;
+        uint256 amount = 0;
+        if (current >= STREAK_TIER_3 && previous < STREAK_TIER_3) amount += streakReward3;
+        if (current >= STREAK_TIER_2 && previous < STREAK_TIER_2) amount += streakReward2;
+        if (current >= STREAK_TIER_1 && previous < STREAK_TIER_1) amount += streakReward1;
+        return amount;
     }
 }

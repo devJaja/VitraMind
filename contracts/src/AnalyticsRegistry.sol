@@ -29,6 +29,7 @@ contract AnalyticsRegistry {
         uint8   period,
         uint256 timestamp
     );
+    event OracleUpdated(address indexed oldOracle, address indexed newOracle);
 
     modifier onlyOracle() {
         require(msg.sender == oracle, "Not oracle");
@@ -70,5 +71,12 @@ contract AnalyticsRegistry {
     function getSnapshot(address user, uint256 index) external view returns (Snapshot memory) {
         require(index < _snapshots[user].length, "Out of bounds");
         return _snapshots[user][index];
+    }
+
+    /// @notice Update the oracle address (only current oracle can rotate)
+    function setOracle(address _oracle) external onlyOracle {
+        require(_oracle != address(0), "Zero oracle");
+        emit OracleUpdated(oracle, _oracle);
+        oracle = _oracle;
     }
 }

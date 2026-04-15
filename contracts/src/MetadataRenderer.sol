@@ -27,9 +27,14 @@ contract MetadataRenderer is Ownable {
     constructor() Ownable(msg.sender) {}
 
     /// @notice Set the IPFS CID for a given tier base level
-    /// @param tier  One of: 1, 11, 26, 51, 76
+    /// @param tier  Must be one of: 1, 11, 26, 51, 76
     /// @param cid   IPFS CID string (e.g. "QmXxx...")
     function setTierCID(uint8 tier, string calldata cid) external onlyOwner {
+        require(
+            tier == 1 || tier == TIER_SPROUT || tier == TIER_BLOOM ||
+            tier == TIER_FLOURISH || tier == TIER_TRANSCENDENT,
+            "Invalid tier"
+        );
         require(bytes(cid).length > 0, "Empty CID");
         tierCID[tier] = cid;
         emit TierCIDUpdated(tier, cid);
