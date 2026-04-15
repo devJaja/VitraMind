@@ -278,7 +278,7 @@ flutter run
 
 ## Testing
 
-**Smart contracts** — 30 tests across all 4 contracts
+**Smart contracts** — 57 tests across all 7 contracts
 
 ```bash
 cd contracts
