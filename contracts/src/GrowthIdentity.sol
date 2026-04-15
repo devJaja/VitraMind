@@ -51,8 +51,8 @@ contract GrowthIdentity is Ownable {
     // ── User actions ──────────────────────────────────────────────────────────
 
     /// @notice Publish or update a growth identity commitment
-    /// @param commitment  keccak256 of the off-chain identity bundle
-    /// @param growthLevel Current growth level snapshot
+    /// @param commitment  keccak256(abi.encode(profileHash, level, streakRoot, badgeRoot, salt))
+    /// @param growthLevel Current growth level snapshot (1–100)
     function publishIdentity(bytes32 commitment, uint8 growthLevel) external {
         require(commitment != bytes32(0), "Invalid commitment");
         require(growthLevel >= 1,         "Invalid level");
