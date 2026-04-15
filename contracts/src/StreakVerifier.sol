@@ -43,20 +43,20 @@ contract StreakVerifier {
     }
 
     /// @notice Anchor a daily streak proof for a user
-    /// @param user        User address
-    /// @param proofHash   keccak256 commitment of the streak data
-    /// @param streakCount Cumulative streak day count
-    function anchorStreak(address user, bytes32 proofHash, uint32 streakCount) external onlyOracle {
+    /// @param user          User address
+    /// @param proofHash     keccak256 commitment of the streak data
+    /// @param currentStreak Cumulative streak day count
+    function anchorStreak(address user, bytes32 proofHash, uint32 currentStreak) external onlyOracle {
         require(user      != address(0),  "Zero address");
         require(proofHash != bytes32(0),  "Invalid hash");
-        require(streakCount > 0,          "Zero streak");
+        require(currentStreak > 0,        "Zero streak");
         require(
             block.timestamp >= lastStreakAt[user] + COOLDOWN,
             "Cooldown active"
         );
         lastStreakAt[user] = block.timestamp;
-        _streaks[user].push(StreakEntry(proofHash, streakCount, block.timestamp));
-        emit StreakAnchored(user, proofHash, streakCount, block.timestamp);
+        _streaks[user].push(StreakEntry(proofHash, currentStreak, block.timestamp));
+        emit StreakAnchored(user, proofHash, currentStreak, block.timestamp);
     }
 
     /// @notice Returns the current streak entry count for a user
