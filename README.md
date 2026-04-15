@@ -153,20 +153,46 @@ function verifyProof(address user, bytes32 hash) external view returns (bool);
 ```
 
 ### `GrowthNFT.sol`
-Soulbound ERC-721 (non-transferable) that evolves as the user grows. One NFT per address. Level, streak days, and IPFS metadata URI are updated by the trusted oracle as milestones are reached.
+Soulbound ERC-721 (non-transferable) that evolves as the user grows. One NFT per address. Metadata URIs are resolved dynamically via `MetadataRenderer` based on the user's current growth tier.
 
 ```solidity
 function mint(address user, string calldata metadataURI) external; // oracle only
 function updateGrowth(address user, uint8 newLevel, uint32 streakDays, uint32 totalLogs, string calldata metadataURI) external;
+function setRenderer(address _renderer) external; // owner only
 ```
 
 ### `RewardsEngine.sol`
-Distributes cUSD token rewards, on-chain points, and milestone badges. Owner pre-funds the contract; oracle triggers payouts after verifying off-chain proofs.
+Distributes cUSD rewards, points, and badges. Streak milestones (7 / 30 / 100 days) trigger automatic tiered cUSD payouts. Owner pre-funds the contract; oracle triggers payouts after verifying off-chain proofs.
 
 ```solidity
-function rewardCUSD(address user, uint256 amount) external;  // oracle only
+function rewardCUSD(address user, uint256 amount) external;
+function rewardStreak(address user, uint32 streakDays) external; // auto-tiered
 function awardPoints(address user, uint256 points, string calldata reason) external;
 function awardBadge(address user, uint256 badgeId) external;
+```
+
+### `StreakVerifier.sol`
+Anchors daily habit streak proofs on-chain with 23-hour cooldown enforcement. Prevents double-counting while keeping raw habit data off-chain.
+
+```solidity
+function anchorStreak(address user, bytes32 proofHash, uint32 currentStreak) external;
+function latestStreak(address user) external view returns (StreakEntry memory);
+```
+
+### `MetadataRenderer.sol`
+Resolves deterministic IPFS metadata URIs for GrowthNFT across 5 growth tiers: Seedling (1–10), Sprout (11–25), Bloom (26–50), Flourish (51–75), Transcendent (76–100).
+
+```solidity
+function setTierCID(uint8 tier, string calldata cid) external; // owner only
+function tokenURI(uint8 level, uint256 tokenId) external view returns (string memory);
+```
+
+### `AnalyticsRegistry.sol`
+Privacy-preserving on-chain analytics layer. Stores weekly and monthly digest hashes of habit/mood analytics — no raw data ever on-chain.
+
+```solidity
+function anchorSnapshot(address user, bytes32 digestHash, uint8 period) external;
+function latestSnapshot(address user, uint8 period) external view returns (Snapshot memory);
 ```
 
 **Network addresses**
@@ -282,11 +308,11 @@ dart test
 - [x] Celo proof registry
 - [x] Smart contract suite
 
-**Phase 2 — Growth Layer**
-- [ ] Habit analytics dashboard
-- [ ] GrowthNFT with dynamic IPFS metadata
-- [ ] Streak proof anchoring
-- [ ] cUSD reward distribution
+**Phase 2 — Growth Layer** *(current)*
+- [x] Habit analytics dashboard data layer (`AnalyticsRegistry`)
+- [x] GrowthNFT with dynamic IPFS metadata (`MetadataRenderer`)
+- [x] Streak proof anchoring (`StreakVerifier`)
+- [x] cUSD reward distribution with milestone tiers
 
 **Phase 3 — Advanced Privacy**
 - [ ] Zero-knowledge proofs for streak verification
