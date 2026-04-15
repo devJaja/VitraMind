@@ -195,6 +195,40 @@ function anchorSnapshot(address user, bytes32 digestHash, uint8 period) external
 function latestSnapshot(address user, uint8 period) external view returns (Snapshot memory);
 ```
 
+### `ZKStreakVerifier.sol`
+Verifies Groth16 zero-knowledge proofs that a user's streak meets a threshold — without revealing the actual streak count. Nullifiers prevent proof replay. The verifier contract is upgradeable.
+
+```solidity
+function proveStreak(uint256[2] pA, uint256[2][2] pB, uint256[2] pC, uint256[] pubSignals) external;
+function hasProvenStreak(address user, uint256 minStreak) external view returns (bool);
+```
+
+### `IPFSExportRegistry.sol`
+Anchors encrypted IPFS export CIDs on-chain. Data is encrypted client-side before pinning; only the CID and a keccak256 content hash are stored. Supports FULL, LOGS, INSIGHTS, and ANALYTICS export types.
+
+```solidity
+function anchorExport(string calldata cid, bytes32 contentHash, ExportType exportType) external;
+function verifyExport(address user, bytes32 contentHash) external view returns (bool);
+```
+
+### `GrowthIdentity.sol`
+Cross-app composable identity layer. Users publish a signed commitment of their growth credentials; third-party apps verify it without accessing raw data. Includes an on-chain app registry.
+
+```solidity
+function publishIdentity(bytes32 commitment, uint8 growthLevel) external;
+function hasActiveIdentity(address user) external view returns (bool);
+function registerApp(string calldata name, address appAddress) external returns (uint256 appId);
+```
+
+### `WellnessProtocol.sol`
+Composable wellness protocol registry. Developers register IPFS-schema-backed programs; users opt in and commit progress hashes. Creator or owner can deactivate protocols.
+
+```solidity
+function registerProtocol(string calldata name, string calldata schemaCID) external returns (uint256);
+function optIn(uint256 protocolId) external;
+function commitProgress(uint256 protocolId, bytes32 commitmentHash) external;
+```
+
 **Network addresses**
 
 | Network | Chain ID | cUSD |
@@ -278,7 +312,7 @@ flutter run
 
 ## Testing
 
-**Smart contracts** — 57 tests across all 7 contracts
+**Smart contracts** — 95 tests across all 11 contracts
 
 ```bash
 cd contracts
@@ -314,11 +348,11 @@ dart test
 - [x] Streak proof anchoring (`StreakVerifier`)
 - [x] cUSD reward distribution with milestone tiers
 
-**Phase 3 — Advanced Privacy**
-- [ ] Zero-knowledge proofs for streak verification
-- [ ] Encrypted IPFS data export
-- [ ] Cross-app growth identity (composable)
-- [ ] Composable wellness protocols
+**Phase 3 — Advanced Privacy** *(current)*
+- [x] Zero-knowledge proofs for streak verification (`ZKStreakVerifier`)
+- [x] Encrypted IPFS data export (`IPFSExportRegistry`)
+- [x] Cross-app growth identity (`GrowthIdentity`)
+- [x] Composable wellness protocols (`WellnessProtocol`)
 
 ---
 
