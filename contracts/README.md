@@ -10,6 +10,9 @@ Solidity contracts powering VitraMind's on-chain proof layer on Celo.
 | `ProofRegistry` | Append-only registry of hashed logs, insights, and streaks |
 | `GrowthNFT` | Soulbound ERC721 that evolves with user growth (oracle-controlled) |
 | `RewardsEngine` | Distributes cUSD rewards, points, and badges via oracle |
+| `StreakVerifier` | Anchors daily streak proofs with 23h cooldown enforcement |
+| `MetadataRenderer` | Resolves dynamic IPFS metadata URIs per growth tier |
+| `AnalyticsRegistry` | Privacy-preserving weekly/monthly analytics digest anchoring |
 
 ## Architecture
 
