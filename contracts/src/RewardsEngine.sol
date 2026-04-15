@@ -7,36 +7,42 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title RewardsEngine
 /// @notice Distributes cUSD rewards and tracks points/badges for streaks & achievements.
-///         Oracle (Serverpod backend) triggers payouts after verifying off-chain proofs.
-/// @dev    Owner pre-funds the contract with cUSD; oracle calls rewardCUSD() per user.
-///         Points and badges are tracked on-chain for transparency but carry no token value.
+///         Oracle triggers payouts after verifying off-chain proofs.
+///         Streak milestones (7, 30, 100 days) trigger automatic tiered cUSD rewards.
 contract RewardsEngine is Ownable {
     using SafeERC20 for IERC20;
 
-    /// @notice The cUSD token used for rewards (immutable after deploy)
     IERC20 public immutable cUSD;
-
-    /// @notice Trusted oracle address — only this address can trigger rewards
     address public oracle;
 
-    /// @notice Aggregated reward stats per user
+    /// @notice Streak milestone thresholds (days)
+    uint32 public constant STREAK_TIER_1 = 7;
+    uint32 public constant STREAK_TIER_2 = 30;
+    uint32 public constant STREAK_TIER_3 = 100;
+
+    /// @notice cUSD reward amounts per streak tier (18 decimals)
+    uint256 public streakReward1 = 0.5  ether; // 0.5  cUSD at 7-day streak
+    uint256 public streakReward2 = 2    ether; // 2    cUSD at 30-day streak
+    uint256 public streakReward3 = 10   ether; // 10   cUSD at 100-day streak
+
     struct UserRewards {
         uint256 points;
         uint256 claimedCUSD;
         uint256 lastRewardAt;
+        uint32  highestStreakRewarded; // prevents re-claiming same tier
     }
 
     mapping(address => UserRewards) public rewards;
-
-    /// @dev badgeId => user => earned
     mapping(uint256 => mapping(address => bool)) public badges;
 
     event PointsAwarded(address indexed user, uint256 points, string reason);
     event CUSDRewarded(address indexed user, uint256 amount);
+    event StreakRewardPaid(address indexed user, uint32 streakDays, uint256 amount);
     event BadgeEarned(address indexed user, uint256 indexed badgeId);
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
     event Deposited(address indexed from, uint256 amount);
     event Withdrawn(address indexed to, uint256 amount);
+    event StreakRewardsUpdated(uint256 tier1, uint256 tier2, uint256 tier3);
 
     modifier onlyOracle() {
         require(msg.sender == oracle, "Not oracle");
@@ -53,9 +59,6 @@ contract RewardsEngine is Ownable {
     // ── Oracle actions ────────────────────────────────────────────────────────
 
     /// @notice Award points for a streak or achievement (no token transfer)
-    /// @param user   Recipient address
-    /// @param points Number of points to award (must be > 0)
-    /// @param reason Human-readable reason string (stored in event only)
     function awardPoints(address user, uint256 points, string calldata reason) external onlyOracle {
         require(user   != address(0), "Zero address");
         require(points  > 0,          "Zero points");
@@ -63,9 +66,7 @@ contract RewardsEngine is Ownable {
         emit PointsAwarded(user, points, reason);
     }
 
-    /// @notice Award a badge to a user (idempotent — no revert on duplicate)
-    /// @param user    Recipient address
-    /// @param badgeId Unique badge identifier
+    /// @notice Award a badge (idempotent)
     function awardBadge(address user, uint256 badgeId) external onlyOracle {
         require(user != address(0), "Zero address");
         if (!badges[badgeId][user]) {
@@ -74,29 +75,38 @@ contract RewardsEngine is Ownable {
         }
     }
 
-    /// @notice Transfer cUSD reward to a user
-    /// @param user   Recipient address
-    /// @param amount Amount of cUSD (18 decimals)
+    /// @notice Transfer a manual cUSD reward to a user
     function rewardCUSD(address user, uint256 amount) external onlyOracle {
         require(user   != address(0), "Zero address");
         require(amount  > 0,          "Zero amount");
-        require(cUSD.balanceOf(address(this)) >= amount, "Insufficient funds");
-        rewards[user].claimedCUSD  += amount;
-        rewards[user].lastRewardAt  = block.timestamp;
-        cUSD.safeTransfer(user, amount);
+        _transferReward(user, amount);
         emit CUSDRewarded(user, amount);
+    }
+
+    /// @notice Trigger streak milestone reward if user qualifies for a new tier
+    /// @param user       User address
+    /// @param streakDays Current streak day count (verified off-chain by oracle)
+    function rewardStreak(address user, uint32 streakDays) external onlyOracle {
+        require(user != address(0), "Zero address");
+        require(streakDays > 0,     "Zero streak");
+
+        UserRewards storage r = rewards[user];
+        uint256 amount = _streakRewardAmount(streakDays, r.highestStreakRewarded);
+        require(amount > 0, "No new tier reached");
+
+        r.highestStreakRewarded = streakDays;
+        _transferReward(user, amount);
+        emit StreakRewardPaid(user, streakDays, amount);
     }
 
     // ── Owner funding ─────────────────────────────────────────────────────────
 
-    /// @notice Deposit cUSD into the contract to fund future rewards
     function deposit(uint256 amount) external onlyOwner {
         require(amount > 0, "Zero amount");
         cUSD.safeTransferFrom(msg.sender, address(this), amount);
         emit Deposited(msg.sender, amount);
     }
 
-    /// @notice Withdraw unspent cUSD back to owner
     function withdraw(uint256 amount) external onlyOwner {
         require(amount > 0, "Zero amount");
         require(cUSD.balanceOf(address(this)) >= amount, "Insufficient funds");
@@ -104,17 +114,39 @@ contract RewardsEngine is Ownable {
         emit Withdrawn(msg.sender, amount);
     }
 
-    /// @notice Returns the current cUSD balance held by this contract
+    /// @notice Update streak reward amounts (owner only)
+    function setStreakRewards(uint256 t1, uint256 t2, uint256 t3) external onlyOwner {
+        require(t1 > 0 && t2 > t1 && t3 > t2, "Invalid tiers");
+        streakReward1 = t1;
+        streakReward2 = t2;
+        streakReward3 = t3;
+        emit StreakRewardsUpdated(t1, t2, t3);
+    }
+
     function contractBalance() external view returns (uint256) {
         return cUSD.balanceOf(address(this));
     }
 
-    // ── Admin ─────────────────────────────────────────────────────────────────
-
-    /// @notice Update the oracle address
     function setOracle(address _oracle) external onlyOwner {
         require(_oracle != address(0), "Zero oracle");
         emit OracleUpdated(oracle, _oracle);
         oracle = _oracle;
+    }
+
+    // ── Internal ──────────────────────────────────────────────────────────────
+
+    function _transferReward(address user, uint256 amount) internal {
+        require(cUSD.balanceOf(address(this)) >= amount, "Insufficient funds");
+        rewards[user].claimedCUSD  += amount;
+        rewards[user].lastRewardAt  = block.timestamp;
+        cUSD.safeTransfer(user, amount);
+    }
+
+    /// @dev Returns the reward amount for the highest new tier reached
+    function _streakRewardAmount(uint32 current, uint32 previous) internal view returns (uint256) {
+        if (current >= STREAK_TIER_3 && previous < STREAK_TIER_3) return streakReward3;
+        if (current >= STREAK_TIER_2 && previous < STREAK_TIER_2) return streakReward2;
+        if (current >= STREAK_TIER_1 && previous < STREAK_TIER_1) return streakReward1;
+        return 0;
     }
 }
