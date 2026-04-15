@@ -6,6 +6,8 @@ pragma solidity ^0.8.27;
 ///         Stores aggregated habit/mood statistics as hashed snapshots — no raw data.
 ///         The oracle pushes weekly/monthly digest hashes; the frontend reads them
 ///         to verify dashboard data integrity.
+/// @dev    period 0 = weekly, period 1 = monthly.
+///         _latestIndex tracks the most recent snapshot per period for O(1) lookup.
 contract AnalyticsRegistry {
     struct Snapshot {
         bytes32 digestHash;  // keccak256 of the off-chain analytics JSON
