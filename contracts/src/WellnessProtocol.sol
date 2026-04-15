@@ -47,8 +47,8 @@ contract WellnessProtocol is Ownable {
     // ── Protocol management ───────────────────────────────────────────────────
 
     /// @notice Register a new wellness protocol
-    /// @param name      Human-readable protocol name
-    /// @param schemaCID IPFS CID of the protocol JSON schema
+    /// @param name      Human-readable protocol name (e.g. "30-Day Meditation")
+    /// @param schemaCID IPFS CID of the JSON schema defining habits, goals, and check-in format
     function registerProtocol(string calldata name, string calldata schemaCID)
         external returns (uint256 protocolId)
     {
