@@ -57,6 +57,8 @@ contract ZKStreakVerifier is Ownable {
         bytes32 nullifier = bytes32(pubSignals[0]);
         uint256 minStreak = pubSignals[2];
 
+        require(nullifier != bytes32(0), "Zero nullifier");
+        require(minStreak > 0,           "Zero minStreak");
         require(!nullifierUsed[nullifier], "Proof already used");
         require(verifier.verifyProof(pA, pB, pC, pubSignals), "Invalid proof");
 

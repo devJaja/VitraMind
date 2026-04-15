@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-
 /// @title IPFSExportRegistry
 /// @notice Anchors encrypted IPFS export CIDs on-chain so users can prove
 ///         they exported their data at a specific point in time.
@@ -12,22 +10,25 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 ///         The encryption key never touches the chain.
 ///
 ///         Export types:
-///           0 = FULL    — complete journal + analytics export
-///           1 = LOGS    — daily logs only
-///           2 = INSIGHTS — AI insights only
+///           0 = FULL      — complete journal + analytics export
+///           1 = LOGS      — daily logs only
+///           2 = INSIGHTS  — AI insights only
 ///           3 = ANALYTICS — aggregated analytics only
-contract IPFSExportRegistry is Ownable {
+contract IPFSExportRegistry {
     enum ExportType { FULL, LOGS, INSIGHTS, ANALYTICS }
 
     struct ExportRecord {
-        string      cid;         // IPFS CID of the encrypted export
-        bytes32     contentHash; // keccak256 of the plaintext before encryption
-        ExportType  exportType;
-        uint256     timestamp;
+        string     cid;          // IPFS CID of the encrypted export
+        bytes32    contentHash;  // keccak256 of the plaintext before encryption
+        ExportType exportType;
+        uint256    timestamp;
     }
 
     /// @dev user => export history
     mapping(address => ExportRecord[]) private _exports;
+
+    /// @dev user => contentHash => exists — O(1) verification, no loop
+    mapping(address => mapping(bytes32 => bool)) private _hashExists;
 
     event ExportAnchored(
         address indexed user,
@@ -36,8 +37,6 @@ contract IPFSExportRegistry is Ownable {
         ExportType exportType,
         uint256 timestamp
     );
-
-    constructor() Ownable(msg.sender) {}
 
     /// @notice Anchor an encrypted IPFS export record
     /// @param cid         IPFS CID of the encrypted export bundle (e.g. "QmXxx...")
@@ -48,9 +47,10 @@ contract IPFSExportRegistry is Ownable {
         bytes32         contentHash,
         ExportType      exportType
     ) external {
-        require(bytes(cid).length > 0,    "Empty CID");
+        require(bytes(cid).length > 0,     "Empty CID");
         require(contentHash != bytes32(0), "Invalid hash");
         _exports[msg.sender].push(ExportRecord(cid, contentHash, exportType, block.timestamp));
+        _hashExists[msg.sender][contentHash] = true;
         emit ExportAnchored(msg.sender, cid, contentHash, exportType, block.timestamp);
     }
 
@@ -72,12 +72,8 @@ contract IPFSExportRegistry is Ownable {
         return _exports[user][len - 1];
     }
 
-    /// @notice Verify that a CID + contentHash pair exists for a user
+    /// @notice O(1) check whether a contentHash has been anchored by a user
     function verifyExport(address user, bytes32 contentHash) external view returns (bool) {
-        ExportRecord[] storage records = _exports[user];
-        for (uint256 i = 0; i < records.length; i++) {
-            if (records[i].contentHash == contentHash) return true;
-        }
-        return false;
+        return _hashExists[user][contentHash];
     }
 }

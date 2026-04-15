@@ -63,6 +63,7 @@ contract GrowthIdentity is Ownable {
     /// @notice Deactivate the caller's identity (opt-out)
     function deactivateIdentity() external {
         require(identities[msg.sender].commitment != bytes32(0), "No identity");
+        require(identities[msg.sender].active, "Already inactive");
         identities[msg.sender].active = false;
         emit IdentityDeactivated(msg.sender);
     }

@@ -54,6 +54,19 @@ describe("ZKStreakVerifier", () => {
       .to.be.revertedWith("Invalid signals");
   });
 
+  it("rejects zero nullifier", async () => {
+    const signals = makeSignals(0, ethers.keccak256(ethers.toUtf8Bytes("c")), 7);
+    await expect(zkVerifier.connect(user).proveStreak(PROOF_A, PROOF_B, PROOF_C, signals))
+      .to.be.revertedWith("Zero nullifier");
+  });
+
+  it("rejects zero minStreak", async () => {
+    const nullifier = ethers.keccak256(ethers.toUtf8Bytes("null-zero"));
+    const signals   = makeSignals(nullifier, ethers.keccak256(ethers.toUtf8Bytes("c")), 0);
+    await expect(zkVerifier.connect(user).proveStreak(PROOF_A, PROOF_B, PROOF_C, signals))
+      .to.be.revertedWith("Zero minStreak");
+  });
+
   it("returns false for unproven milestone", async () => {
     expect(await zkVerifier.hasProvenStreak(user.address, 30)).to.be.false;
   });
@@ -180,6 +193,14 @@ describe("GrowthIdentity", () => {
     expect(await contract.hasActiveIdentity(user.address)).to.be.false;
   });
 
+  it("reverts deactivateIdentity when already inactive", async () => {
+    const commitment = ethers.keccak256(ethers.toUtf8Bytes("bundle"));
+    await contract.connect(user).publishIdentity(commitment, 5);
+    await contract.connect(user).deactivateIdentity();
+    await expect(contract.connect(user).deactivateIdentity())
+      .to.be.revertedWith("Already inactive");
+  });
+
   it("registers an app and records verification", async () => {
     await expect(contract.connect(owner).registerApp("TestApp", appAddr.address))
       .to.emit(contract, "AppRegistered").withArgs(0, "TestApp", appAddr.address);
@@ -255,6 +276,13 @@ describe("WellnessProtocol", () => {
     await expect(contract.connect(creator).deactivateProtocol(0))
       .to.emit(contract, "ProtocolDeactivated").withArgs(0);
     expect((await contract.protocols(0)).active).to.be.false;
+  });
+
+  it("reverts deactivateProtocol when already inactive", async () => {
+    await contract.connect(creator).registerProtocol("Protocol", "QmX");
+    await contract.connect(creator).deactivateProtocol(0);
+    await expect(contract.connect(creator).deactivateProtocol(0))
+      .to.be.revertedWith("Already inactive");
   });
 
   it("owner can deactivate any protocol", async () => {

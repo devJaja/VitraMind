@@ -63,6 +63,7 @@ contract WellnessProtocol is Ownable {
     function deactivateProtocol(uint256 protocolId) external {
         Protocol storage p = protocols[protocolId];
         require(p.creator != address(0),                          "Unknown protocol");
+        require(p.active,                                         "Already inactive");
         require(msg.sender == p.creator || msg.sender == owner(), "Unauthorized");
         p.active = false;
         emit ProtocolDeactivated(protocolId);
