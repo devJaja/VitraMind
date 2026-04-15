@@ -1,5 +1,5 @@
 const { ethers } = require("hardhat");
-const fs = require("fs");
+const fs   = require("fs");
 const path = require("path");
 
 // Known cUSD addresses
@@ -21,32 +21,53 @@ async function main() {
   console.log("cUSD:      ", CUSD_ADDRESS);
   console.log("─".repeat(52));
 
+  // ── Phase 1 ────────────────────────────────────────────────────────────────
   const ProfileAnchor = await ethers.deployContract("ProfileAnchor");
   await ProfileAnchor.waitForDeployment();
-  console.log("ProfileAnchor  :", await ProfileAnchor.getAddress());
+  console.log("ProfileAnchor      :", await ProfileAnchor.getAddress());
 
   const ProofRegistry = await ethers.deployContract("ProofRegistry");
   await ProofRegistry.waitForDeployment();
-  console.log("ProofRegistry  :", await ProofRegistry.getAddress());
+  console.log("ProofRegistry      :", await ProofRegistry.getAddress());
+
+  // ── Phase 2 ────────────────────────────────────────────────────────────────
+  const MetadataRenderer = await ethers.deployContract("MetadataRenderer");
+  await MetadataRenderer.waitForDeployment();
+  console.log("MetadataRenderer   :", await MetadataRenderer.getAddress());
 
   const GrowthNFT = await ethers.deployContract("GrowthNFT", [ORACLE_ADDRESS]);
   await GrowthNFT.waitForDeployment();
-  console.log("GrowthNFT      :", await GrowthNFT.getAddress());
+  console.log("GrowthNFT          :", await GrowthNFT.getAddress());
+
+  // Attach renderer to GrowthNFT
+  await (await GrowthNFT.setRenderer(await MetadataRenderer.getAddress())).wait();
+  console.log("GrowthNFT renderer set ✓");
+
+  const StreakVerifier = await ethers.deployContract("StreakVerifier", [ORACLE_ADDRESS]);
+  await StreakVerifier.waitForDeployment();
+  console.log("StreakVerifier      :", await StreakVerifier.getAddress());
+
+  const AnalyticsRegistry = await ethers.deployContract("AnalyticsRegistry", [ORACLE_ADDRESS]);
+  await AnalyticsRegistry.waitForDeployment();
+  console.log("AnalyticsRegistry  :", await AnalyticsRegistry.getAddress());
 
   const RewardsEngine = await ethers.deployContract("RewardsEngine", [CUSD_ADDRESS, ORACLE_ADDRESS]);
   await RewardsEngine.waitForDeployment();
-  console.log("RewardsEngine  :", await RewardsEngine.getAddress());
+  console.log("RewardsEngine      :", await RewardsEngine.getAddress());
 
-  // Persist deployment addresses for frontend/backend consumption
+  // Persist deployment addresses
   const deployments = {
-    network:       network.name,
-    chainId:       network.chainId.toString(),
-    deployer:      deployer.address,
-    ProfileAnchor: await ProfileAnchor.getAddress(),
-    ProofRegistry: await ProofRegistry.getAddress(),
-    GrowthNFT:     await GrowthNFT.getAddress(),
-    RewardsEngine: await RewardsEngine.getAddress(),
-    deployedAt:    new Date().toISOString(),
+    network:           network.name,
+    chainId:           network.chainId.toString(),
+    deployer:          deployer.address,
+    ProfileAnchor:     await ProfileAnchor.getAddress(),
+    ProofRegistry:     await ProofRegistry.getAddress(),
+    MetadataRenderer:  await MetadataRenderer.getAddress(),
+    GrowthNFT:         await GrowthNFT.getAddress(),
+    StreakVerifier:    await StreakVerifier.getAddress(),
+    AnalyticsRegistry: await AnalyticsRegistry.getAddress(),
+    RewardsEngine:     await RewardsEngine.getAddress(),
+    deployedAt:        new Date().toISOString(),
   };
 
   const outPath = path.join(__dirname, `../deployments.${network.name}.json`);
