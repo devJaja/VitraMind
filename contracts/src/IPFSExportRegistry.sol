@@ -40,9 +40,9 @@ contract IPFSExportRegistry is Ownable {
     constructor() Ownable(msg.sender) {}
 
     /// @notice Anchor an encrypted IPFS export record
-    /// @param cid         IPFS CID of the encrypted export bundle
-    /// @param contentHash keccak256 of the plaintext data (for integrity verification)
-    /// @param exportType  Category of export
+    /// @param cid         IPFS CID of the encrypted export bundle (e.g. "QmXxx...")
+    /// @param contentHash keccak256 of the plaintext data before encryption — used for integrity checks
+    /// @param exportType  Category of export (FULL / LOGS / INSIGHTS / ANALYTICS)
     function anchorExport(
         string calldata cid,
         bytes32         contentHash,
