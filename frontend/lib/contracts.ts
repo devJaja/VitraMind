@@ -2,34 +2,36 @@
  * Contract addresses per network.
  * Update after deployment — run `npm run deploy:alfajores` or `npm run deploy:celo`
  * in the contracts/ directory and copy addresses from deployments.<network>.json
+ *
+ * Use `undefined` (not empty string) so `!!address` guards in hooks work correctly.
  */
-export const CONTRACTS = {
+export const CONTRACTS: Record<string, Record<string, `0x${string}` | undefined>> = {
   // Celo Alfajores testnet (chainId 44787)
   alfajores: {
-    ProfileAnchor:    "" as `0x${string}`,
-    ProofRegistry:    "" as `0x${string}`,
-    GrowthNFT:        "" as `0x${string}`,
-    RewardsEngine:    "" as `0x${string}`,
-    StreakVerifier:   "" as `0x${string}`,
-    MetadataRenderer: "" as `0x${string}`,
-    AnalyticsRegistry:"" as `0x${string}`,
-    ZKStreakVerifier:  "" as `0x${string}`,
-    IPFSExportRegistry:"" as `0x${string}`,
-    GrowthIdentity:   "" as `0x${string}`,
-    WellnessProtocol: "" as `0x${string}`,
+    ProfileAnchor:     undefined,
+    ProofRegistry:     undefined,
+    GrowthNFT:         undefined,
+    RewardsEngine:     undefined,
+    StreakVerifier:     undefined,
+    MetadataRenderer:  undefined,
+    AnalyticsRegistry: undefined,
+    ZKStreakVerifier:   undefined,
+    IPFSExportRegistry:undefined,
+    GrowthIdentity:    undefined,
+    WellnessProtocol:  undefined,
   },
   // Celo mainnet (chainId 42220)
   celo: {
-    ProfileAnchor:    "" as `0x${string}`,
-    ProofRegistry:    "" as `0x${string}`,
-    GrowthNFT:        "" as `0x${string}`,
-    RewardsEngine:    "" as `0x${string}`,
-    StreakVerifier:   "" as `0x${string}`,
-    MetadataRenderer: "" as `0x${string}`,
-    AnalyticsRegistry:"" as `0x${string}`,
-    ZKStreakVerifier:  "" as `0x${string}`,
-    IPFSExportRegistry:"" as `0x${string}`,
-    GrowthIdentity:   "" as `0x${string}`,
-    WellnessProtocol: "" as `0x${string}`,
+    ProfileAnchor:     undefined,
+    ProofRegistry:     undefined,
+    GrowthNFT:         undefined,
+    RewardsEngine:     undefined,
+    StreakVerifier:     undefined,
+    MetadataRenderer:  undefined,
+    AnalyticsRegistry: undefined,
+    ZKStreakVerifier:   undefined,
+    IPFSExportRegistry:undefined,
+    GrowthIdentity:    undefined,
+    WellnessProtocol:  undefined,
   },
-} as const;
+};

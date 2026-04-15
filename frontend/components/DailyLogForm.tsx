@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAccount, useWalletClient } from "wagmi";
-import { keccak256, toBytes, encodePacked } from "viem";
+import { keccak256, encodePacked } from "viem";
 
 const MOODS = ["😞", "😕", "😐", "🙂", "😄"];
 

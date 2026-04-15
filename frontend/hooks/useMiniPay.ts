@@ -13,12 +13,6 @@ import { injected } from "wagmi/connectors";
  * MiniPay injects `window.ethereum` with `isMiniPay = true`.
  * Per MiniPay docs, the "Connect Wallet" button must be hidden when
  * running inside MiniPay — the connection is implicit.
- *
- * Returns:
- *   isMiniPay      — true when running inside MiniPay
- *   isConnected    — wallet connection state
- *   address        — connected wallet address
- *   hideConnectBtn — convenience flag: hide connect button when true
  */
 export function useMiniPay() {
   const [isMiniPay, setIsMiniPay] = useState(false);
@@ -32,10 +26,14 @@ export function useMiniPay() {
       (window.ethereum as { isMiniPay?: boolean }).isMiniPay
     ) {
       setIsMiniPay(true);
-      // Auto-connect — MiniPay wallet is always available, no user prompt needed
-      connect({ connector: injected() });
+      // Only connect if not already connected (e.g. after page refresh)
+      if (!isConnected) {
+        connect({ connector: injected() });
+      }
     }
-  }, [connect]);
+  // connect is stable from wagmi; isConnected intentionally omitted to run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     isMiniPay,
