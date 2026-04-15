@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VitraMind Frontend
 
-## Getting Started
+Next.js MiniPay mini app for VitraMind — privacy-first personal growth on Celo.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js 16** (App Router)
+- **wagmi v3 + viem v2** — Celo wallet integration
+- **Tailwind CSS v4**
+
+## Key Hook
+
+```ts
+import { useMiniPay } from "@/hooks/useMiniPay";
+
+const { isMiniPay, isConnected, address, hideConnectBtn } = useMiniPay();
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Detects MiniPay, auto-connects the injected wallet, and returns `hideConnectBtn` to conditionally hide the connect button per [MiniPay docs](https://docs.celo.org/build-on-celo/build-on-minipay/quickstart).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run dev        # localhost:3000
+```
 
-## Learn More
+After deploying contracts, fill in addresses in `lib/contracts.ts`.
 
-To learn more about Next.js, take a look at the following resources:
+## Test in MiniPay
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+ngrok http 3000    # paste the URL into MiniPay Developer Settings → Load Test Page
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Networks
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Network | Chain ID |
+|---|---|
+| Celo Mainnet | 42220 |
+| Alfajores Testnet | 44787 |
