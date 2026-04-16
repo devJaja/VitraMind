@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useWalletClient } from "wagmi";
+import { useAccount } from "wagmi";
 import { keccak256, encodePacked } from "viem";
+import { useMiniPayCUSD } from "@/hooks/useMiniPayCUSD";
 
 const MOODS = ["😞", "😕", "😐", "🙂", "😄"];
 
@@ -17,7 +18,7 @@ const MOODS = ["😞", "😕", "😐", "🙂", "😄"];
  */
 export function DailyLogForm({ proofRegistryAddress }: { proofRegistryAddress?: `0x${string}` }) {
   const { address, isConnected } = useAccount();
-  const { data: walletClient } = useWalletClient();
+  const { writeContract } = useMiniPayCUSD();
 
   const [mood, setMood]           = useState(3);
   const [habits, setHabits]       = useState("");
@@ -25,9 +26,22 @@ export function DailyLogForm({ proofRegistryAddress }: { proofRegistryAddress?: 
   const [status, setStatus]       = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [txHash, setTxHash]       = useState<string>();
 
+  const PROOF_REGISTRY_ABI = [
+    {
+      name: "submitProof",
+      type: "function",
+      inputs: [
+        { name: "hash",      type: "bytes32" },
+        { name: "proofType", type: "uint8"   },
+      ],
+      outputs: [],
+      stateMutability: "nonpayable",
+    },
+  ] as const;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!isConnected || !walletClient || !proofRegistryAddress) return;
+    if (!isConnected || !proofRegistryAddress) return;
 
     setStatus("submitting");
     try {
@@ -38,22 +52,8 @@ export function DailyLogForm({ proofRegistryAddress }: { proofRegistryAddress?: 
       );
       const logHash = keccak256(logPayload);
 
-      // ProofRegistry.submitProof(bytes32 hash, uint8 proofType)
-      // ProofType.LOG = 0
-      const PROOF_REGISTRY_ABI = [
-        {
-          name: "submitProof",
-          type: "function",
-          inputs: [
-            { name: "hash",      type: "bytes32" },
-            { name: "proofType", type: "uint8"   },
-          ],
-          outputs: [],
-          stateMutability: "nonpayable",
-        },
-      ] as const;
-
-      const hash = await walletClient.writeContract({
+      // Uses cUSD as feeCurrency inside MiniPay, plain tx elsewhere
+      const hash = await writeContract({
         address: proofRegistryAddress,
         abi:     PROOF_REGISTRY_ABI,
         functionName: "submitProof",
