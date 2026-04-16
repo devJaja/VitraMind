@@ -11,6 +11,10 @@ export const metadata: Metadata = {
   description: "Privacy-first habit tracking with verifiable on-chain proofs. Built for MiniPay.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent" },
+  other: {
+    // MiniPay mini app discovery tag
+    "minipay-app": "true",
+  },
 };
 
 export const viewport: Viewport = {
