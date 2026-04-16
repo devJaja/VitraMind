@@ -26,9 +26,11 @@ export function useMiniPay() {
       (window.ethereum as { isMiniPay?: boolean }).isMiniPay
     ) {
       setIsMiniPay(true);
-      // Only connect if not already connected (e.g. after page refresh)
       if (!isConnected) {
-        connect({ connector: injected() });
+        // Wrap in try/catch — MetaMask (or other injected wallets in a desktop
+        // browser) can intercept this call and throw "Unexpected error" if the
+        // provider rejects the implicit connect request.
+        connect({ connector: injected() }, { onError: () => {} });
       }
     }
   // connect is stable from wagmi; isConnected intentionally omitted to run once on mount

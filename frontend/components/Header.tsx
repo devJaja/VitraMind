@@ -23,7 +23,7 @@ export function Header() {
       {/* Hidden inside MiniPay — wallet is auto-connected */}
       {!hideConnectBtn && (
         <button
-          onClick={() => connect({ connector: injected() })}
+          onClick={() => connect({ connector: injected() }, { onError: () => {} })}
           className="text-sm bg-green-500 hover:bg-green-400 text-black font-semibold px-4 py-1.5 rounded-full transition-colors"
         >
           {isConnected
