@@ -8,16 +8,28 @@ function getMiniPayProvider() {
   return eth?.isMiniPay ? window.ethereum : undefined;
 }
 
+// Resolve window.ethereum lazily — only when called, never on module load.
+// This prevents wagmi from probing the provider on mount, which triggers
+// MetaMask's evmAsk.js "Unexpected error" console log.
+function getBrowserProvider() {
+  if (typeof window === "undefined") return undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (window.ethereum as any) ?? undefined;
+}
+
 export const wagmiConfig = createConfig({
   chains: [celo, celoAlfajores],
   connectors: [
-    // MiniPay: scoped connector for auto-connect inside MiniPay wallet
+    // MiniPay — auto-connects inside MiniPay wallet
     injected({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      target: () => ({ id: "minipay", name: "MiniPay", provider: getMiniPayProvider() as any }),
+      target: () => ({ id: "minipay",       name: "MiniPay",        provider: getMiniPayProvider() as any }),
     }),
-    // Standard injected — used by the Connect Wallet button in browser
-    injected(),
+    // Browser wallet — provider resolved lazily, used for manual connect + auto-reconnect
+    injected({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      target: () => ({ id: "browserWallet", name: "Browser Wallet", provider: getBrowserProvider() as any }),
+    }),
   ],
   transports: {
     [celo.id]:          http("https://forno.celo.org"),

@@ -2,25 +2,16 @@
 
 import { useMiniPay } from "@/hooks/useMiniPay";
 import { useConnect } from "wagmi";
-import { injected } from "wagmi/connectors";
 
 export function Header() {
   const { isMiniPay, isConnected, address, hideConnectBtn } = useMiniPay();
   const { connect, isPending, error } = useConnect();
 
   function handleConnect() {
-    connect({
-      connector: injected({
-        target() {
-          return {
-            id: "browserWallet",
-            name: "Browser Wallet",
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            provider: typeof window !== "undefined" ? (window.ethereum as any) : undefined,
-          };
-        },
-      }),
-    });
+    const c =
+      connectors.find((c) => c.id === "minipay") ??
+      connectors.find((c) => c.id === "browserWallet");
+    if (c) connect({ connector: c });
   }
 
   return (
