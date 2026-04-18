@@ -20,7 +20,6 @@ export default function Home() {
           Your Growth
         </h2>
         <Dashboard
-          proofRegistryAddress={contracts.ProofRegistry}
           growthNFTAddress={contracts.GrowthNFT}
         />
       </section>
