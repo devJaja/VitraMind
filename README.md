@@ -7,7 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.27-363636?logo=solidity)](contracts/)
 [![Built on Celo](https://img.shields.io/badge/Built%20on-Celo-FCFF52?logo=celo&logoColor=000)](https://celo.org)
-[![Flutter](https://img.shields.io/badge/Frontend-Flutter-02569B?logo=flutter)](frontend/)
+[![Next.js](https://img.shields.io/badge/Frontend-Next.js-000?logo=next.js)](frontend/)
+[![MiniPay](https://img.shields.io/badge/MiniPay-Compatible-FCFF52)](frontend/)
 
 VitraMind is a privacy-first personal growth companion that helps users track habits, moods, and reflections — while anchoring cryptographic proofs of progress on the Celo blockchain.
 
