@@ -2,10 +2,8 @@
 
 import { useCallback } from "react";
 import { useChainId, useSwitchChain } from "wagmi";
-import { getWalletClient } from "wagmi/actions";
-import { encodeFunctionData, type Abi } from "viem";
+import { createWalletClient, custom, encodeFunctionData, type Abi } from "viem";
 import { celo } from "wagmi/chains";
-import { wagmiConfig } from "@/lib/wagmi";
 
 const CUSD: Record<number, `0x${string}`> = {
   44787: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
@@ -32,25 +30,31 @@ export function useMiniPayCUSD() {
       functionName: string;
       args: unknown[];
     }): Promise<`0x${string}`> => {
-      // Switch to Celo if on wrong network, then fetch walletClient bound to Celo
-      const currentChain = chainId;
-      if (currentChain !== celo.id) {
+      if (!window.ethereum) throw new Error("No wallet found");
+
+      // Switch to Celo first if needed
+      if (chainId !== celo.id) {
         await switchChainAsync({ chainId: celo.id });
       }
 
-      const walletClient = await getWalletClient(wagmiConfig, { chainId: celo.id });
-      if (!walletClient) throw new Error("Wallet not connected");
+      // Build a fresh viem walletClient bound to Celo — bypasses wagmi connector state
+      const walletClient = createWalletClient({
+        chain: celo,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        transport: custom(window.ethereum as any),
+      });
 
-      if (isMiniPay && CUSD[celo.id]) {
+      const [account] = await walletClient.getAddresses();
+
+      if (isMiniPay) {
         const data = encodeFunctionData({ abi, functionName, args } as Parameters<typeof encodeFunctionData>[0]);
         return walletClient.sendTransaction({
-          to: address, data, feeCurrency: CUSD[celo.id],
+          account, to: address, data, feeCurrency: CUSD[celo.id],
         } as Parameters<typeof walletClient.sendTransaction>[0]);
       }
 
       return walletClient.writeContract({
-        address, abi, functionName, args,
-        chain: walletClient.chain,
+        account, address, abi, functionName, args, chain: celo,
       } as Parameters<typeof walletClient.writeContract>[0]);
     },
     [isMiniPay, chainId, switchChainAsync]
