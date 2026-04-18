@@ -72,8 +72,9 @@ export function DailyLogForm({ proofRegistryAddress }: { proofRegistryAddress?: 
 
   if (!isConnected) {
     return (
-      <div className="text-center text-gray-400 py-12">
-        Connect your wallet to start logging.
+      <div className="text-center py-10">
+        <p className="text-2xl mb-2">🔒</p>
+        <p className="text-gray-400 text-sm">Connect your wallet to start logging.</p>
       </div>
     );
   }
@@ -134,7 +135,7 @@ export function DailyLogForm({ proofRegistryAddress }: { proofRegistryAddress?: 
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="w-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black font-bold py-3 rounded-xl transition-colors"
+        className="w-full bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-400 hover:to-emerald-300 disabled:opacity-50 disabled:cursor-not-allowed text-black font-bold py-3 rounded-xl transition-all shadow-lg shadow-green-500/20"
       >
         {status === "submitting" ? "Anchoring proof…" : "Submit & Anchor Proof"}
       </button>
