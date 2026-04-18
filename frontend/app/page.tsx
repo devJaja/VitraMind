@@ -7,24 +7,17 @@ import { useChainId } from "wagmi";
 
 export default function Home() {
   const chainId = useChainId();
-
-  // Pick contract addresses based on connected network
-  const contracts =
-    chainId === 42220 ? CONTRACTS.celo : CONTRACTS.alfajores;
+  const contracts = chainId === 42220 ? CONTRACTS.celo : CONTRACTS.alfajores;
 
   return (
     <div className="space-y-8">
-      {/* Growth stats */}
       <section>
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
           Your Growth
         </h2>
-        <Dashboard
-          growthNFTAddress={contracts.GrowthNFT}
-        />
+        <Dashboard />
       </section>
 
-      {/* Daily log */}
       <section>
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
           Today&apos;s Log
@@ -34,7 +27,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Privacy note */}
       <p className="text-xs text-gray-600 text-center">
         Your raw data never leaves your device. Only cryptographic proofs are anchored on Celo.
       </p>
