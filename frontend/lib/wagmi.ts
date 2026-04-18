@@ -10,14 +10,15 @@ function getMiniPayProvider() {
 
 export const wagmiConfig = createConfig({
   chains: [celo, celoAlfajores],
-  // Only the MiniPay connector is registered — it returns undefined provider
-  // outside MiniPay so wagmi never probes window.ethereum on mount.
-  // The browser wallet connector is created inline at click time in Header.tsx.
+  ssr: true, // fixes hydration mismatch
   connectors: [
+    // MiniPay — auto-connects inside MiniPay wallet
     injected({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       target: () => ({ id: "minipay", name: "MiniPay", provider: getMiniPayProvider() as any }),
     }),
+    // Browser wallet — registered so wagmi can provide walletClient after connect
+    injected({ shimDisconnect: true }),
   ],
   transports: {
     [celo.id]:          http("https://forno.celo.org"),

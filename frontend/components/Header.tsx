@@ -1,16 +1,21 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useMiniPay } from "@/hooks/useMiniPay";
 import { useConnect } from "wagmi";
-import { injected } from "wagmi/connectors";
 
 export function Header() {
   const { isMiniPay, isConnected, address, hideConnectBtn } = useMiniPay();
-  const { connect, isPending, error } = useConnect();
+  const { connect, connectors, isPending, error } = useConnect();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   function handleConnect() {
-    // Created inline at click time — wagmi never probes window.ethereum on mount
-    connect({ connector: injected() });
+    // Use the registered injected connector — ensures wagmi provides walletClient
+    const c = connectors.find((c) => c.id === "minipay") ??
+              connectors.find((c) => c.id === "injected");
+    if (c) connect({ connector: c });
   }
 
   return (
@@ -19,33 +24,29 @@ export function Header() {
         <span className="text-lg font-bold bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">
           🌱 VitraMind
         </span>
-        {isMiniPay && (
+        {mounted && isMiniPay && (
           <span className="text-xs bg-yellow-400 text-black px-2 py-0.5 rounded-full font-semibold">
             MiniPay
           </span>
         )}
       </div>
 
-      {!hideConnectBtn && (
+      {mounted && !hideConnectBtn && (
         <div className="flex flex-col items-end gap-0.5">
           <button
             onClick={handleConnect}
             disabled={isPending}
             className="text-sm bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-400 hover:to-emerald-300 disabled:opacity-60 text-black font-bold px-4 py-1.5 rounded-full transition-all shadow-lg shadow-green-500/20"
           >
-            {isPending
-              ? "Connecting…"
-              : isConnected
+            {isPending ? "Connecting…" : isConnected
               ? `${address?.slice(0, 6)}…${address?.slice(-4)}`
               : "Connect Wallet"}
           </button>
-          {error && (
-            <span className="text-xs text-red-400">{error.message}</span>
-          )}
+          {error && <span className="text-xs text-red-400">{error.message}</span>}
         </div>
       )}
 
-      {hideConnectBtn && isConnected && (
+      {mounted && hideConnectBtn && isConnected && (
         <span className="text-xs text-gray-400 font-mono">
           {address?.slice(0, 6)}…{address?.slice(-4)}
         </span>
