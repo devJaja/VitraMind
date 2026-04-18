@@ -22,9 +22,15 @@ module.exports = {
       chainId: 44787,
     },
     celo: {
-      url: "https://forno.celo.org",
+      url: process.env.CELO_RPC_URL || "https://forno.celo.org",
       accounts: [PRIVATE_KEY],
       chainId: 42220,
+      timeout: 120000,
+      httpHeaders: { "Connection": "keep-alive" },
     },
+  },
+  gasReporter: {
+    enabled: process.env.REPORT_GAS === "true",
+    currency: "USD",
   },
 };
