@@ -2,18 +2,16 @@
 
 import { useMiniPay } from "@/hooks/useMiniPay";
 import { useConnect } from "wagmi";
+import { injected } from "wagmi/connectors";
 
 export function Header() {
   const { isMiniPay, isConnected, address, hideConnectBtn } = useMiniPay();
-  const { connect, connectors } = useConnect();
+  const { connect, isPending, error } = useConnect();
 
   function handleConnect() {
-    // Inside MiniPay use the scoped connector; outside use MetaMask or any injected
-    const c =
-      connectors.find((c) => c.id === "minipay") ??
-      connectors.find((c) => c.id === "metaMask") ??
-      connectors.find((c) => c.id === "injected");
-    if (c) connect({ connector: c }, { onError: () => {} });
+    // injected() resolves window.ethereum at call time — works with MetaMask,
+    // Rabby, Coinbase Wallet, or any injected provider present in the browser
+    connect({ connector: injected() });
   }
 
   return (
@@ -30,12 +28,22 @@ export function Header() {
       </div>
 
       {!hideConnectBtn && (
-        <button
-          onClick={handleConnect}
-          className="text-sm bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-400 hover:to-emerald-300 text-black font-bold px-4 py-1.5 rounded-full transition-all shadow-lg shadow-green-500/20"
-        >
-          {isConnected ? `${address?.slice(0, 6)}…${address?.slice(-4)}` : "Connect Wallet"}
-        </button>
+        <div className="flex flex-col items-end gap-0.5">
+          <button
+            onClick={handleConnect}
+            disabled={isPending}
+            className="text-sm bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-400 hover:to-emerald-300 disabled:opacity-60 text-black font-bold px-4 py-1.5 rounded-full transition-all shadow-lg shadow-green-500/20"
+          >
+            {isPending
+              ? "Connecting…"
+              : isConnected
+              ? `${address?.slice(0, 6)}…${address?.slice(-4)}`
+              : "Connect Wallet"}
+          </button>
+          {error && (
+            <span className="text-xs text-red-400">{error.message}</span>
+          )}
+        </div>
       )}
 
       {hideConnectBtn && isConnected && (

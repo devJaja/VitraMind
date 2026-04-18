@@ -11,13 +11,12 @@ function getMiniPayProvider() {
 export const wagmiConfig = createConfig({
   chains: [celo, celoAlfajores],
   connectors: [
-    // MiniPay: scoped injected connector — only active when isMiniPay === true
+    // MiniPay: scoped connector for auto-connect inside MiniPay wallet
     injected({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       target: () => ({ id: "minipay", name: "MiniPay", provider: getMiniPayProvider() as any }),
     }),
-    // Browser wallets (MetaMask, Rabby, etc.) — standard injected connector
-    injected({ target: "metaMask" }),
+    // Standard injected — used by the Connect Wallet button in browser
     injected(),
   ],
   transports: {
