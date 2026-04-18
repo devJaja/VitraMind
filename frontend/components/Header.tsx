@@ -9,9 +9,18 @@ export function Header() {
   const { connect, isPending, error } = useConnect();
 
   function handleConnect() {
-    // injected() resolves window.ethereum at call time — works with MetaMask,
-    // Rabby, Coinbase Wallet, or any injected provider present in the browser
-    connect({ connector: injected() });
+    connect({
+      connector: injected({
+        target() {
+          return {
+            id: "browserWallet",
+            name: "Browser Wallet",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            provider: typeof window !== "undefined" ? (window.ethereum as any) : undefined,
+          };
+        },
+      }),
+    });
   }
 
   return (
