@@ -28,7 +28,15 @@ export default function Home() {
       </section>
 
       <p className="text-xs text-gray-600 text-center">
-        Your raw data never leaves your device. Only cryptographic proofs are anchored on Celo.
+        Your raw data never leaves your device. Only cryptographic proofs are anchored on Celo.{" "}
+        <a
+          href={`https://celoscan.io/address/${contracts.ProofRegistry}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-gray-400 transition-colors"
+        >
+          View registry ↗
+        </a>
       </p>
     </div>
   );
