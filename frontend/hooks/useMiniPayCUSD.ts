@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback } from "react";
-import { useWalletClient, useChainId, useSwitchChain } from "wagmi";
+import { useChainId, useSwitchChain } from "wagmi";
+import { getWalletClient } from "wagmi/actions";
 import { encodeFunctionData, type Abi } from "viem";
 import { celo } from "wagmi/chains";
+import { wagmiConfig } from "@/lib/wagmi";
 
 const CUSD: Record<number, `0x${string}`> = {
   44787: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
@@ -11,7 +13,6 @@ const CUSD: Record<number, `0x${string}`> = {
 };
 
 export function useMiniPayCUSD() {
-  const { data: walletClient } = useWalletClient();
   const chainId = useChainId();
   const { switchChainAsync } = useSwitchChain();
 
@@ -31,32 +32,28 @@ export function useMiniPayCUSD() {
       functionName: string;
       args: unknown[];
     }): Promise<`0x${string}`> => {
+      // Fetch walletClient at call time — avoids undefined on first render
+      const walletClient = await getWalletClient(wagmiConfig);
       if (!walletClient) throw new Error("Wallet not connected");
 
-      // Auto-switch to Celo mainnet if on wrong network
-      if (chainId !== celo.id && chainId !== 44787) {
+      // Switch to Celo if on wrong network
+      const currentChain = walletClient.chain?.id ?? chainId;
+      if (currentChain !== celo.id && currentChain !== 44787) {
         await switchChainAsync({ chainId: celo.id });
       }
 
-      if (isMiniPay && CUSD[chainId]) {
-        // MiniPay path: inject feeCurrency for cUSD gas
+      if (isMiniPay && CUSD[currentChain]) {
         const data = encodeFunctionData({ abi, functionName, args } as Parameters<typeof encodeFunctionData>[0]);
         return walletClient.sendTransaction({
-          to: address,
-          data,
-          feeCurrency: CUSD[chainId],
+          to: address, data, feeCurrency: CUSD[currentChain],
         } as Parameters<typeof walletClient.sendTransaction>[0]);
       }
 
-      // Standard browser wallet path — writeContract handles gas estimation
       return walletClient.writeContract({
-        address,
-        abi,
-        functionName,
-        args,
+        address, abi, functionName, args,
       } as Parameters<typeof walletClient.writeContract>[0]);
     },
-    [walletClient, isMiniPay, chainId, switchChainAsync]
+    [isMiniPay, chainId, switchChainAsync]
   );
 
   return { writeContract, isMiniPay };
