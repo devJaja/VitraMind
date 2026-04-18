@@ -51,6 +51,7 @@ export function useMiniPayCUSD() {
 
       return walletClient.writeContract({
         address, abi, functionName, args,
+        chain: walletClient.chain,
       } as Parameters<typeof walletClient.writeContract>[0]);
     },
     [isMiniPay, chainId, switchChainAsync]
