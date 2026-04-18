@@ -2,15 +2,25 @@ const { ethers } = require("hardhat");
 const fs   = require("fs");
 const path = require("path");
 
+async function deployWithRetry(factory, args = [], retries = 5) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const contract = await ethers.deployContract(factory, args);
+      await contract.waitForDeployment();
+      return contract;
+    } catch (e) {
+      if (i === retries - 1) throw e;
+      console.log(`  ↻ retry ${i + 1}/${retries - 1}...`);
+      await new Promise(r => setTimeout(r, 4000));
+    }
+  }
+}
+
 // Known cUSD addresses
 // Alfajores testnet: 0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1
 // Celo mainnet:      0x765DE816845861e75A25fCA122bb6898B8B1282a
 const CUSD_ADDRESS   = process.env.CUSD_ADDRESS;
 const ORACLE_ADDRESS = process.env.ORACLE_ADDRESS;
-
-// Phase 3: ZK verifier address (deploy your circom-generated verifier first, then set this)
-// Leave empty to skip ZKStreakVerifier deployment
-const ZK_VERIFIER_ADDRESS = process.env.ZK_VERIFIER_ADDRESS || "";
 
 async function main() {
   if (!CUSD_ADDRESS)   throw new Error("Missing env: CUSD_ADDRESS");
@@ -26,59 +36,48 @@ async function main() {
   console.log("─".repeat(52));
 
   // ── Phase 1 ────────────────────────────────────────────────────────────────
-  const ProfileAnchor = await ethers.deployContract("ProfileAnchor");
-  await ProfileAnchor.waitForDeployment();
+  const ProfileAnchor = await deployWithRetry("ProfileAnchor");
   console.log("ProfileAnchor      :", await ProfileAnchor.getAddress());
 
-  const ProofRegistry = await ethers.deployContract("ProofRegistry");
-  await ProofRegistry.waitForDeployment();
+  const ProofRegistry = await deployWithRetry("ProofRegistry");
   console.log("ProofRegistry      :", await ProofRegistry.getAddress());
 
   // ── Phase 2 ────────────────────────────────────────────────────────────────
-  const MetadataRenderer = await ethers.deployContract("MetadataRenderer");
-  await MetadataRenderer.waitForDeployment();
+  const MetadataRenderer = await deployWithRetry("MetadataRenderer");
   console.log("MetadataRenderer   :", await MetadataRenderer.getAddress());
 
-  const GrowthNFT = await ethers.deployContract("GrowthNFT", [ORACLE_ADDRESS]);
-  await GrowthNFT.waitForDeployment();
+  const GrowthNFT = await deployWithRetry("GrowthNFT", [ORACLE_ADDRESS]);
   console.log("GrowthNFT          :", await GrowthNFT.getAddress());
 
   await (await GrowthNFT.setRenderer(await MetadataRenderer.getAddress())).wait();
   console.log("GrowthNFT renderer set ✓");
 
-  const StreakVerifier = await ethers.deployContract("StreakVerifier", [ORACLE_ADDRESS]);
-  await StreakVerifier.waitForDeployment();
+  const StreakVerifier = await deployWithRetry("StreakVerifier", [ORACLE_ADDRESS]);
   console.log("StreakVerifier      :", await StreakVerifier.getAddress());
 
-  const AnalyticsRegistry = await ethers.deployContract("AnalyticsRegistry", [ORACLE_ADDRESS]);
-  await AnalyticsRegistry.waitForDeployment();
+  const AnalyticsRegistry = await deployWithRetry("AnalyticsRegistry", [ORACLE_ADDRESS]);
   console.log("AnalyticsRegistry  :", await AnalyticsRegistry.getAddress());
 
-  const RewardsEngine = await ethers.deployContract("RewardsEngine", [CUSD_ADDRESS, ORACLE_ADDRESS]);
-  await RewardsEngine.waitForDeployment();
+  const RewardsEngine = await deployWithRetry("RewardsEngine", [CUSD_ADDRESS, ORACLE_ADDRESS]);
   console.log("RewardsEngine      :", await RewardsEngine.getAddress());
 
   // ── Phase 3 ────────────────────────────────────────────────────────────────
-  let zkStreakVerifierAddress = "";
-  if (ZK_VERIFIER_ADDRESS) {
-    const ZKStreakVerifier = await ethers.deployContract("ZKStreakVerifier", [ZK_VERIFIER_ADDRESS]);
-    await ZKStreakVerifier.waitForDeployment();
-    zkStreakVerifierAddress = await ZKStreakVerifier.getAddress();
-    console.log("ZKStreakVerifier    :", zkStreakVerifierAddress);
-  } else {
-    console.log("ZKStreakVerifier    : skipped (set ZK_VERIFIER_ADDRESS to deploy)");
-  }
+  // Deploy Groth16Verifier (real snarkjs-generated verifier) then ZKStreakVerifier
+  const Groth16Verifier = await deployWithRetry("Groth16Verifier");
+  const groth16VerifierAddress = await Groth16Verifier.getAddress();
+  console.log("Groth16Verifier    :", groth16VerifierAddress);
 
-  const IPFSExportRegistry = await ethers.deployContract("IPFSExportRegistry");
-  await IPFSExportRegistry.waitForDeployment();
+  const ZKStreakVerifier = await deployWithRetry("ZKStreakVerifier", [groth16VerifierAddress]);
+  const zkStreakVerifierAddress = await ZKStreakVerifier.getAddress();
+  console.log("ZKStreakVerifier    :", zkStreakVerifierAddress);
+
+  const IPFSExportRegistry = await deployWithRetry("IPFSExportRegistry");
   console.log("IPFSExportRegistry :", await IPFSExportRegistry.getAddress());
 
-  const GrowthIdentity = await ethers.deployContract("GrowthIdentity");
-  await GrowthIdentity.waitForDeployment();
+  const GrowthIdentity = await deployWithRetry("GrowthIdentity");
   console.log("GrowthIdentity     :", await GrowthIdentity.getAddress());
 
-  const WellnessProtocol = await ethers.deployContract("WellnessProtocol");
-  await WellnessProtocol.waitForDeployment();
+  const WellnessProtocol = await deployWithRetry("WellnessProtocol");
   console.log("WellnessProtocol   :", await WellnessProtocol.getAddress());
 
   // Persist deployment addresses
@@ -97,6 +96,7 @@ async function main() {
     RewardsEngine:       await RewardsEngine.getAddress(),
     // Phase 3
     ZKStreakVerifier:    zkStreakVerifierAddress,
+    Groth16Verifier:     groth16VerifierAddress,
     IPFSExportRegistry:  await IPFSExportRegistry.getAddress(),
     GrowthIdentity:      await GrowthIdentity.getAddress(),
     WellnessProtocol:    await WellnessProtocol.getAddress(),
