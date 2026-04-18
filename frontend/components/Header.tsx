@@ -5,7 +5,7 @@ import { useConnect } from "wagmi";
 
 export function Header() {
   const { isMiniPay, isConnected, address, hideConnectBtn } = useMiniPay();
-  const { connect, isPending, error } = useConnect();
+  const { connect, connectors, isPending, error } = useConnect();
 
   function handleConnect() {
     const c =
