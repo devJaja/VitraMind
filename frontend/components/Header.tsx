@@ -2,16 +2,15 @@
 
 import { useMiniPay } from "@/hooks/useMiniPay";
 import { useConnect } from "wagmi";
+import { injected } from "wagmi/connectors";
 
 export function Header() {
   const { isMiniPay, isConnected, address, hideConnectBtn } = useMiniPay();
-  const { connect, connectors, isPending, error } = useConnect();
+  const { connect, isPending, error } = useConnect();
 
   function handleConnect() {
-    const c =
-      connectors.find((c) => c.id === "minipay") ??
-      connectors.find((c) => c.id === "browserWallet");
-    if (c) connect({ connector: c });
+    // Created inline at click time — wagmi never probes window.ethereum on mount
+    connect({ connector: injected() });
   }
 
   return (
