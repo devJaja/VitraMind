@@ -25,6 +25,7 @@ export function DailyLogForm({ proofRegistryAddress }: { proofRegistryAddress?: 
   const [reflection, setReflection] = useState("");
   const [status, setStatus]       = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [txHash, setTxHash]       = useState<string>();
+  const [errorMsg, setErrorMsg]   = useState<string>();
 
   const PROOF_REGISTRY_ABI = [
     {
@@ -45,19 +46,17 @@ export function DailyLogForm({ proofRegistryAddress }: { proofRegistryAddress?: 
 
     setStatus("submitting");
     try {
-      // Hash the log locally — raw data stays on device
       const logPayload = encodePacked(
         ["address", "uint8", "string", "string", "uint256"],
         [address!, mood, habits, reflection, BigInt(Date.now())]
       );
       const logHash = keccak256(logPayload);
 
-      // Uses cUSD as feeCurrency inside MiniPay, plain tx elsewhere
       const hash = await writeContract({
         address: proofRegistryAddress,
         abi:     PROOF_REGISTRY_ABI,
         functionName: "submitProof",
-        args:    [logHash, 0], // 0 = ProofType.LOG
+        args:    [logHash, 0],
       });
 
       setTxHash(hash);
@@ -65,8 +64,10 @@ export function DailyLogForm({ proofRegistryAddress }: { proofRegistryAddress?: 
       setMood(3);
       setHabits("");
       setReflection("");
-    } catch {
+    } catch (err) {
+      console.error("submitProof failed:", err);
       setStatus("error");
+      setErrorMsg(err instanceof Error ? err.message : String(err));
     }
   }
 
@@ -156,8 +157,8 @@ export function DailyLogForm({ proofRegistryAddress }: { proofRegistryAddress?: 
         </p>
       )}
       {status === "error" && (
-        <p className="text-red-400 text-sm text-center">
-          Transaction failed. Please try again.
+        <p className="text-red-400 text-sm text-center break-words">
+          ✗ {errorMsg ?? "Transaction failed. Please try again."}
         </p>
       )}
     </form>

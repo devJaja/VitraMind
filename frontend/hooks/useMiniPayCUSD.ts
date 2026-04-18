@@ -1,27 +1,19 @@
 "use client";
 
 import { useCallback } from "react";
-import { useWalletClient, useChainId } from "wagmi";
+import { useWalletClient, useChainId, useSwitchChain } from "wagmi";
 import { encodeFunctionData, type Abi } from "viem";
+import { celo } from "wagmi/chains";
 
-// cUSD address per chain — used as feeCurrency so MiniPay pays gas in cUSD
 const CUSD: Record<number, `0x${string}`> = {
-  44787: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1", // Alfajores
-  42220: "0x765DE816845861e75A25fCA122bb6898B8B1282a", // Celo mainnet
+  44787: "0x874069Fa1Eb16D44d622F2e0Ca25eeA172369bC1",
+  42220: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
 };
 
-/**
- * useMiniPayCUSD
- *
- * MiniPay requires transactions to specify `feeCurrency` so gas is paid
- * in cUSD rather than CELO. This hook wraps sendTransaction to inject
- * that field automatically when running inside MiniPay.
- *
- * Outside MiniPay it falls back to a plain sendTransaction with no feeCurrency.
- */
 export function useMiniPayCUSD() {
   const { data: walletClient } = useWalletClient();
   const chainId = useChainId();
+  const { switchChainAsync } = useSwitchChain();
 
   const isMiniPay =
     typeof window !== "undefined" &&
@@ -41,23 +33,30 @@ export function useMiniPayCUSD() {
     }): Promise<`0x${string}`> => {
       if (!walletClient) throw new Error("Wallet not connected");
 
-      const data = encodeFunctionData({
+      // Auto-switch to Celo mainnet if on wrong network
+      if (chainId !== celo.id && chainId !== 44787) {
+        await switchChainAsync({ chainId: celo.id });
+      }
+
+      if (isMiniPay && CUSD[chainId]) {
+        // MiniPay path: inject feeCurrency for cUSD gas
+        const data = encodeFunctionData({ abi, functionName, args } as Parameters<typeof encodeFunctionData>[0]);
+        return walletClient.sendTransaction({
+          to: address,
+          data,
+          feeCurrency: CUSD[chainId],
+        } as Parameters<typeof walletClient.sendTransaction>[0]);
+      }
+
+      // Standard browser wallet path — writeContract handles gas estimation
+      return walletClient.writeContract({
+        address,
         abi,
         functionName,
         args,
-      } as Parameters<typeof encodeFunctionData>[0]);
-
-      const tx = {
-        to: address,
-        data,
-        ...(isMiniPay && CUSD[chainId] ? { feeCurrency: CUSD[chainId] } : {}),
-      };
-
-      return walletClient.sendTransaction(
-        tx as Parameters<typeof walletClient.sendTransaction>[0]
-      );
+      } as Parameters<typeof walletClient.writeContract>[0]);
     },
-    [walletClient, isMiniPay, chainId]
+    [walletClient, isMiniPay, chainId, switchChainAsync]
   );
 
   return { writeContract, isMiniPay };
