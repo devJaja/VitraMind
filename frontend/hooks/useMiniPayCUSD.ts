@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback } from "react";
-import { useChainId, useSwitchChain } from "wagmi";
 import { createWalletClient, custom, encodeFunctionData, type Abi } from "viem";
 import { celo } from "wagmi/chains";
 
@@ -10,10 +9,21 @@ const CUSD: Record<number, `0x${string}`> = {
   42220: "0x765DE816845861e75A25fCA122bb6898B8B1282a",
 };
 
-export function useMiniPayCUSD() {
-  const chainId = useChainId();
-  const { switchChainAsync } = useSwitchChain();
+const CELO_CHAIN_HEX = "0xa4ec"; // 42220 in hex
 
+async function ensureCeloNetwork() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const eth = window.ethereum as any;
+  const currentChainHex: string = await eth.request({ method: "eth_chainId" });
+  if (currentChainHex.toLowerCase() !== CELO_CHAIN_HEX) {
+    await eth.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: CELO_CHAIN_HEX }],
+    });
+  }
+}
+
+export function useMiniPayCUSD() {
   const isMiniPay =
     typeof window !== "undefined" &&
     !!(window.ethereum as { isMiniPay?: boolean } | undefined)?.isMiniPay;
@@ -32,18 +42,11 @@ export function useMiniPayCUSD() {
     }): Promise<`0x${string}`> => {
       if (!window.ethereum) throw new Error("No wallet found");
 
-      // Switch to Celo first if needed
-      if (chainId !== celo.id) {
-        await switchChainAsync({ chainId: celo.id });
-      }
+      // Switch to Celo directly via provider — avoids wagmi connector state lag
+      await ensureCeloNetwork();
 
-      // Build a fresh viem walletClient bound to Celo — bypasses wagmi connector state
-      const walletClient = createWalletClient({
-        chain: celo,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        transport: custom(window.ethereum as any),
-      });
-
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const walletClient = createWalletClient({ chain: celo, transport: custom(window.ethereum as any) });
       const [account] = await walletClient.getAddresses();
 
       if (isMiniPay) {
@@ -57,7 +60,7 @@ export function useMiniPayCUSD() {
         account, address, abi, functionName, args, chain: celo,
       } as Parameters<typeof walletClient.writeContract>[0]);
     },
-    [isMiniPay, chainId, switchChainAsync]
+    [isMiniPay]
   );
 
   return { writeContract, isMiniPay };
