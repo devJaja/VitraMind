@@ -33,7 +33,7 @@ export function useMiniPayCUSD() {
       args: unknown[];
     }): Promise<`0x${string}`> => {
       // Fetch walletClient at call time — avoids undefined on first render
-      const walletClient = await getWalletClient(wagmiConfig);
+      const walletClient = await getWalletClient(wagmiConfig, { chainId: celo.id });
       if (!walletClient) throw new Error("Wallet not connected");
 
       // Switch to Celo if on wrong network
