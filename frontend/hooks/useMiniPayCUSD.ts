@@ -32,20 +32,19 @@ export function useMiniPayCUSD() {
       functionName: string;
       args: unknown[];
     }): Promise<`0x${string}`> => {
-      // Fetch walletClient at call time — avoids undefined on first render
-      const walletClient = await getWalletClient(wagmiConfig, { chainId: celo.id });
-      if (!walletClient) throw new Error("Wallet not connected");
-
-      // Switch to Celo if on wrong network
-      const currentChain = walletClient.chain?.id ?? chainId;
-      if (currentChain !== celo.id && currentChain !== 44787) {
+      // Switch to Celo if on wrong network, then fetch walletClient bound to Celo
+      const currentChain = chainId;
+      if (currentChain !== celo.id) {
         await switchChainAsync({ chainId: celo.id });
       }
 
-      if (isMiniPay && CUSD[currentChain]) {
+      const walletClient = await getWalletClient(wagmiConfig, { chainId: celo.id });
+      if (!walletClient) throw new Error("Wallet not connected");
+
+      if (isMiniPay && CUSD[celo.id]) {
         const data = encodeFunctionData({ abi, functionName, args } as Parameters<typeof encodeFunctionData>[0]);
         return walletClient.sendTransaction({
-          to: address, data, feeCurrency: CUSD[currentChain],
+          to: address, data, feeCurrency: CUSD[celo.id],
         } as Parameters<typeof walletClient.sendTransaction>[0]);
       }
 
