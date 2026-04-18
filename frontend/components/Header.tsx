@@ -2,12 +2,10 @@
 
 import { useMiniPay } from "@/hooks/useMiniPay";
 import { useConnect } from "wagmi";
-import { injected } from "wagmi/connectors";
 
 export function Header() {
-  // useMiniPay owns the connect logic — use its returned values directly
   const { isMiniPay, isConnected, address, hideConnectBtn } = useMiniPay();
-  const { connect } = useConnect();
+  const { connect, connectors } = useConnect();
 
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-black">
@@ -20,10 +18,12 @@ export function Header() {
         )}
       </div>
 
-      {/* Hidden inside MiniPay — wallet is auto-connected */}
       {!hideConnectBtn && (
         <button
-          onClick={() => connect({ connector: injected() }, { onError: () => {} })}
+          onClick={() => {
+            const c = connectors.find((c) => c.id === "minipay");
+            if (c) connect({ connector: c }, { onError: () => {} });
+          }}
           className="text-sm bg-green-500 hover:bg-green-400 text-black font-semibold px-4 py-1.5 rounded-full transition-colors"
         >
           {isConnected
@@ -32,7 +32,6 @@ export function Header() {
         </button>
       )}
 
-      {/* Inside MiniPay: show address inline, no button */}
       {hideConnectBtn && isConnected && (
         <span className="text-xs text-gray-400 font-mono">
           {address?.slice(0, 6)}…{address?.slice(-4)}
