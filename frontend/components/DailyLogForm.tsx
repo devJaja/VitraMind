@@ -142,7 +142,10 @@ export function DailyLogForm({ proofRegistryAddress, onLogSaved }: Props) {
           <label className="block text-sm font-medium text-gray-300 mb-2">How are you feeling today?</label>
           <div className="flex gap-3">
             {MOODS.map((emoji, i) => (
-              <button key={i} type="button" onClick={() => setMood(i + 1)}
+              <button key={i} type="button"
+                aria-label={`Mood ${i + 1} of 5`}
+                aria-pressed={mood === i + 1}
+                onClick={() => setMood(i + 1)}
                 className={`text-2xl p-2 rounded-xl transition-all ${mood === i + 1 ? "bg-green-500/20 ring-2 ring-green-500 scale-110" : "bg-gray-800 hover:bg-gray-700"}`}>
                 {emoji}
               </button>
