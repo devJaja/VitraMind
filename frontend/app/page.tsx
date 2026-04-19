@@ -11,6 +11,7 @@ import { AITab } from "@/components/AITab";
 import { ProofsTab } from "@/components/ProofsTab";
 import { ProfileAnchorCard, StreakAnchorCard, IPFSExportCard, GrowthIdentityCard, WellnessProtocolCard } from "@/components/ContractActions";
 import { useRewards } from "@/hooks/useRewards";
+import { useToast } from "@/components/Toast";
 import { CONTRACTS } from "@/lib/contracts";
 
 const contracts = CONTRACTS.celo;
@@ -40,9 +41,11 @@ export default function Home() {
   const chainId = useChainId();
   const [tab, setTab] = useState<Tab>("Log");
   const [historyKey, setHistoryKey] = useState(0);
+  const { show: showToast, node: toastNode } = useToast();
 
   function handleLogSaved() {
-    setHistoryKey(k => k + 1); // trigger HistoryTab refresh
+    setHistoryKey(k => k + 1);
+    showToast("✓ Log anchored on Celo!", "success");
   }
 
   return (
@@ -111,6 +114,7 @@ export default function Home() {
           View ProofRegistry ↗
         </a>
       </p>
+      {toastNode}
     </div>
   );
 }
