@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import { getLogs, type LogEntry } from "@/lib/logStorage";
+import { getLogs, deleteLog, type LogEntry } from "@/lib/logStorage";
 
 const MOODS = ["", "😞", "😕", "😐", "🙂", "😄"];
 
-function LogCard({ entry }: { entry: LogEntry }) {
+function LogCard({ entry, onDelete }: { entry: LogEntry; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
   const date = new Date(entry.date);
 
@@ -52,15 +52,18 @@ function LogCard({ entry }: { entry: LogEntry }) {
               <p className="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed">{entry.insight}</p>
             </div>
           )}
-          <div className="flex gap-3 flex-wrap">
-            {entry.logTxHash && (
-              <a href={`https://celoscan.io/tx/${entry.logTxHash}`} target="_blank" rel="noopener noreferrer"
-                className="text-xs text-green-500 hover:text-green-400 underline">Log tx ↗</a>
-            )}
-            {entry.insightTxHash && (
-              <a href={`https://celoscan.io/tx/${entry.insightTxHash}`} target="_blank" rel="noopener noreferrer"
-                className="text-xs text-purple-400 hover:text-purple-300 underline">Insight tx ↗</a>
-            )}
+          <div className="flex gap-3 flex-wrap items-center justify-between">
+            <div className="flex gap-3 flex-wrap">
+              {entry.logTxHash && (
+                <a href={`https://celoscan.io/tx/${entry.logTxHash}`} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-green-500 hover:text-green-400 underline">Log tx ↗</a>
+              )}
+              {entry.insightTxHash && (
+                <a href={`https://celoscan.io/tx/${entry.insightTxHash}`} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-purple-400 hover:text-purple-300 underline">Insight tx ↗</a>
+              )}
+            </div>
+            <button onClick={onDelete} className="text-xs text-red-500/60 hover:text-red-400 transition-colors">Delete</button>
           </div>
         </div>
       )}
@@ -72,9 +75,11 @@ export function HistoryTab({ refreshKey }: { refreshKey?: number }) {
   const { address } = useAccount();
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
-  useEffect(() => {
+  function reload() {
     if (address) setLogs([...getLogs(address)].reverse());
-  }, [address, refreshKey]);
+  }
+
+  useEffect(() => { reload(); }, [address, refreshKey]);
 
   if (!address) return null;
 
@@ -88,7 +93,12 @@ export function HistoryTab({ refreshKey }: { refreshKey?: number }) {
   return (
     <div className="space-y-2">
       <p className="text-xs text-gray-500 mb-3">{logs.length} entr{logs.length === 1 ? "y" : "ies"} saved locally</p>
-      {logs.map(entry => <LogCard key={entry.id} entry={entry} />)}
+      {logs.map(entry => (
+        <LogCard key={entry.id} entry={entry} onDelete={() => {
+          deleteLog(address, entry.id);
+          reload();
+        }} />
+      ))}
     </div>
   );
 }
