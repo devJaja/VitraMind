@@ -72,9 +72,10 @@ export function DailyLogForm({ proofRegistryAddress, onLogSaved }: Props) {
       // 2. Save log to localStorage
       saveLog(address, entry);
 
-      // 3. Call Gemini for AI insights
+      // 3. Call Gemini — quick_check for first entry, full_insight for multiple
       setPhase("generating_insight");
       const allLogs = getLogs(address);
+      const mode = allLogs.length >= 3 ? "full_insight" : "quick_check";
       const res = await fetch("/api/insights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,6 +85,7 @@ export function DailyLogForm({ proofRegistryAddress, onLogSaved }: Props) {
             reflection: l.reflection,
             date: new Date(l.date).toLocaleDateString(),
           })),
+          mode,
         }),
       });
 

@@ -5,13 +5,14 @@ import { useAccount, useChainId } from "wagmi";
 import { Dashboard } from "@/components/Dashboard";
 import { DailyLogForm } from "@/components/DailyLogForm";
 import { HistoryTab } from "@/components/HistoryTab";
+import { AITab } from "@/components/AITab";
 import { ProofsTab } from "@/components/ProofsTab";
 import { ProfileAnchorCard, StreakAnchorCard, IPFSExportCard, GrowthIdentityCard, WellnessProtocolCard } from "@/components/ContractActions";
 import { useRewards } from "@/hooks/useRewards";
 import { CONTRACTS } from "@/lib/contracts";
 
 const contracts = CONTRACTS.celo;
-const TABS = ["Log", "History", "Proofs", "Profile", "Streak", "Identity", "Wellness", "Export"] as const;
+const TABS = ["Log", "AI", "History", "Proofs", "Profile", "Streak", "Identity", "Wellness", "Export"] as const;
 type Tab = typeof TABS[number];
 
 function RewardsBar() {
@@ -90,6 +91,7 @@ export default function Home() {
           </div>
         )}
         {tab === "History"  && <HistoryTab refreshKey={historyKey} />}
+        {tab === "AI"       && <AITab refreshKey={historyKey} />}
         {tab === "Proofs"   && <ProofsTab />}
         {tab === "Profile"  && <ProfileAnchorCard />}
         {tab === "Streak"   && <StreakAnchorCard />}
