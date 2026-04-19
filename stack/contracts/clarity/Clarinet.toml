@@ -1,0 +1,38 @@
+[project]
+name = "vitramind-stacks"
+description = "VitraMind wellness protocol contracts on Stacks Bitcoin"
+authors = []
+telemetry = false
+cache_dir = "./.cache"
+
+[contracts.profile-anchor]
+path = "contracts/profile-anchor.clar"
+epoch = "3.1"
+
+[contracts.proof-registry]
+path = "contracts/proof-registry.clar"
+epoch = "3.1"
+
+[contracts.streak-verifier]
+path = "contracts/streak-verifier.clar"
+epoch = "3.1"
+
+[contracts.analytics-registry]
+path = "contracts/analytics-registry.clar"
+epoch = "3.1"
+
+[contracts.ipfs-export-registry]
+path = "contracts/ipfs-export-registry.clar"
+epoch = "3.1"
+
+[contracts.growth-identity]
+path = "contracts/growth-identity.clar"
+epoch = "3.1"
+
+[contracts.wellness-protocol]
+path = "contracts/wellness-protocol.clar"
+epoch = "3.1"
+
+[repl.analysis]
+passes = ["check_checker"]
+check_checker = { trusted_sender = false, trusted_caller = false, callee_filter = false }
