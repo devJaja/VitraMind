@@ -1,7 +1,7 @@
 "use client";
 
 import { useProofList } from "@/hooks/useProofList";
-import { CONTRACTS } from "@/lib/contracts";
+import { CONTRACTS, celoscanTx, celoscanAddr } from "@/lib/contracts";
 
 const TYPE_COLORS: Record<string, string> = {
   LOG:         "bg-blue-500/20 text-blue-400",
@@ -34,7 +34,7 @@ export function ProofsTab() {
           </div>
           <p className="text-xs font-mono text-gray-400 break-all">{p.hash}</p>
           <a
-            href={`https://celoscan.io/address/${CONTRACTS.celo.ProofRegistry}#readContract`}
+            href={celoscanAddr(CONTRACTS.celo.ProofRegistry!)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-green-500 hover:text-green-400 transition-colors"
