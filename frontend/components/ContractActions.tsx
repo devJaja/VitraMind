@@ -171,6 +171,7 @@ export function IPFSExportCard() {
   const [cid, setCid] = useState("");
   const [exportType, setExportType] = useState(0);
   const { status, txHash, err, send } = useTx();
+  const { latestCID, exportType: lastType, exportedAt, exportCount } = useIPFSExport();
 
   function handleAnchor() {
     if (!C.IPFSExportRegistry || !cid) return;
@@ -182,6 +183,13 @@ export function IPFSExportCard() {
     <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
       <p className="text-sm font-semibold text-white mb-1">📦 IPFS Export</p>
       <p className="text-xs text-gray-500 mb-3">Anchor an encrypted IPFS export CID on-chain for verifiable data portability.</p>
+      {latestCID && (
+        <div className="bg-gray-800/60 rounded-xl p-3 mb-3">
+          <p className="text-xs text-gray-400">Latest export: <span className="text-green-400">{lastType}</span></p>
+          <p className="text-xs font-mono text-gray-500 truncate">{latestCID}</p>
+          {exportedAt && <p className="text-xs text-gray-600 mt-0.5">{new Date(Number(exportedAt) * 1000).toLocaleString()} · {exportCount.toString()} total</p>}
+        </div>
+      )}
       <input value={cid} onChange={e => setCid(e.target.value)} placeholder="IPFS CID (e.g. Qm...)"
         className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 mb-2" />
       <select value={exportType} onChange={e => setExportType(Number(e.target.value))}
