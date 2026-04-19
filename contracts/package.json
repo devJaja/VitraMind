@@ -11,6 +11,7 @@
     "deploy:zk:celo": "hardhat run scripts/deployZK.js --network celo",
     "deploy:verifier:celo": "hardhat run scripts/deployGroth16Verifier.js --network celo",
     "deploy:gateway:celo":  "hardhat run scripts/deployOracleGateway.js --network celo",
+    "verify:celo":          "hardhat run scripts/verify.js --network celo",
     "zk:prove": "node zk/generateStreakProof.js",
     "zk:verify": "node zk/verifyStreakProof.js"
   },
