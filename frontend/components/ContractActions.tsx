@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useAccount } from "wagmi";
 import { keccak256, encodePacked } from "viem";
 import { useMiniPayCUSD } from "@/hooks/useMiniPayCUSD";
+import { useStreakVerifier } from "@/hooks/useStreakVerifier";
+import { useGrowthIdentity } from "@/hooks/useGrowthIdentity";
+import { useIPFSExport } from "@/hooks/useIPFSExport";
 import { CONTRACTS } from "@/lib/contracts";
 
 const C = CONTRACTS.celo;
@@ -130,6 +133,11 @@ export function StreakAnchorCard() {
   const { address } = useAccount();
   const [streak, setStreak] = useState("1");
   const { status, txHash, err, send } = useTx();
+  const { currentStreak, lastSubmittedAt, streakCount } = useStreakVerifier();
+
+  const lastDate = lastSubmittedAt
+    ? new Date(Number(lastSubmittedAt) * 1000).toLocaleString()
+    : null;
 
   function handleAnchor() {
     if (!C.StreakVerifier || !address) return;
@@ -141,6 +149,13 @@ export function StreakAnchorCard() {
     <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
       <p className="text-sm font-semibold text-white mb-1">🔥 Streak Anchor</p>
       <p className="text-xs text-gray-500 mb-3">Anchor today's habit streak proof on-chain (23h cooldown enforced).</p>
+      {currentStreak > 0 && (
+        <div className="bg-orange-950/40 border border-orange-800/30 rounded-xl p-3 mb-3">
+          <p className="text-xs text-orange-400">Current on-chain streak: <strong>{currentStreak} days</strong></p>
+          {lastDate && <p className="text-xs text-gray-500 mt-0.5">Last anchored: {lastDate}</p>}
+          <p className="text-xs text-gray-500">Total anchors: {streakCount.toString()}</p>
+        </div>
+      )}
       <input type="number" min="1" value={streak} onChange={e => setStreak(e.target.value)} placeholder="Current streak days"
         className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500" />
       <Btn onClick={handleAnchor} disabled={status === "pending" || !streak}>Anchor Streak</Btn>
