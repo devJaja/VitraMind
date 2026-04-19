@@ -12,6 +12,7 @@ import { ProofsTab } from "@/components/ProofsTab";
 import { ProfileAnchorCard, StreakAnchorCard, IPFSExportCard, GrowthIdentityCard, WellnessProtocolCard } from "@/components/ContractActions";
 import { useRewards } from "@/hooks/useRewards";
 import { useToast } from "@/components/Toast";
+import { formatCUSD } from "@/lib/format";
 import { CONTRACTS } from "@/lib/contracts";
 
 const contracts = CONTRACTS.celo;
@@ -24,7 +25,7 @@ function RewardsBar() {
     <div className="grid grid-cols-3 gap-2">
       {[
         { label: "Points",      value: points.toString() },
-        { label: "cUSD Earned", value: `${(Number(claimedCUSD) / 1e18).toFixed(2)}` },
+        { label: "cUSD Earned", value: formatCUSD(claimedCUSD) },
         { label: "Best Streak", value: `${highestStreakRewarded}d` },
       ].map(({ label, value }) => (
         <div key={label} className="bg-gray-800/60 rounded-xl p-3 text-center">
