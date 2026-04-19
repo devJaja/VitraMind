@@ -3,6 +3,20 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
+// Simple in-memory rate limiter: max 10 requests per minute per IP
+const rateLimitMap = new Map<string, { count: number; reset: number }>();
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.reset) {
+    rateLimitMap.set(ip, { count: 1, reset: now + 60_000 });
+    return false;
+  }
+  if (entry.count >= 10) return true;
+  entry.count++;
+  return false;
+}
+
 type LogEntry = { mood: number; habits: string; reflection: string; date: string };
 
 function buildContext(logs: LogEntry[]) {
@@ -56,6 +70,11 @@ Under 150 words.`,
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for") ?? "unknown";
+    if (isRateLimited(ip)) {
+      return NextResponse.json({ error: "Rate limit exceeded. Try again in a minute." }, { status: 429 });
+    }
+
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "Gemini API key not configured" }, { status: 500 });
     }
