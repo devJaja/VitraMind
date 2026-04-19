@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useReadContract, useChainId } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { CONTRACTS } from "@/lib/contracts";
 
 const ABI = [
@@ -27,8 +27,7 @@ export const STREAK_MILESTONES = [7, 30, 100] as const;
  */
 export function useZKStreak() {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const zkAddress = (chainId === 42220 ? CONTRACTS.celo : CONTRACTS.alfajores).ZKStreakVerifier;
+  const zkAddress = CONTRACTS.celo.ZKStreakVerifier;
 
   const results = STREAK_MILESTONES.map((milestone) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks

@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useReadContract, useChainId } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { CONTRACTS } from "@/lib/contracts";
 
 const ABI = [
@@ -36,8 +36,7 @@ const ABI = [
  */
 export function useRewards() {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const rewardsAddress = (chainId === 42220 ? CONTRACTS.celo : CONTRACTS.alfajores).RewardsEngine;
+  const rewardsAddress = CONTRACTS.celo.RewardsEngine;
 
   const { data, isLoading } = useReadContract({
     address: rewardsAddress,

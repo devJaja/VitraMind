@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useReadContract, useChainId } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { CONTRACTS } from "@/lib/contracts";
 
 const ABI = [
@@ -31,9 +31,8 @@ const ABI = [
  */
 export function useProofRegistry() {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const contracts = chainId === 42220 ? CONTRACTS.celo : CONTRACTS.alfajores;
-  const registryAddress = contracts.ProofRegistry;
+  // Always read from Celo mainnet — wallet chain doesn't affect read calls
+  const registryAddress = CONTRACTS.celo.ProofRegistry;
 
   const { data: proofCount, isLoading } = useReadContract({
     address: registryAddress,

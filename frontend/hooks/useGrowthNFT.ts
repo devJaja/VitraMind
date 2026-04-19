@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useReadContract, useChainId } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { CONTRACTS } from "@/lib/contracts";
 
 const ABI = [
@@ -34,8 +34,7 @@ const ABI = [
  */
 export function useGrowthNFT() {
   const { address } = useAccount();
-  const chainId = useChainId();
-  const nftAddress = (chainId === 42220 ? CONTRACTS.celo : CONTRACTS.alfajores).GrowthNFT;
+  const nftAddress = CONTRACTS.celo.GrowthNFT;
 
   const { data: tokenId } = useReadContract({
     address: nftAddress,
