@@ -29,11 +29,12 @@ cp .env.example .env   # fill in PRIVATE_KEY, CUSD_ADDRESS, ORACLE_ADDRESS
 ## Commands
 
 ```bash
-npm test                        # run 99 tests
+npm test                        # run 103 tests (99 + 4 OracleGateway)
 npm run test:gas                # tests + gas report
 npm run compile                 # compile contracts
 npm run deploy:celo             # full deploy to mainnet
 npm run deploy:alfajores        # full deploy to testnet
+npm run deploy:gateway:celo     # deploy OracleGateway to mainnet
 npm run zk:prove -- 30 7 <salt> # generate ZK streak proof
 npm run zk:verify -- '<calldata>' # verify proof off-chain
 ```
