@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import { getLogs, deleteLog, type LogEntry } from "@/lib/logStorage";
+import { getLogs, deleteLog, exportLogs, type LogEntry } from "@/lib/logStorage";
 
 const MOODS = ["", "😞", "😕", "😐", "🙂", "😄"];
 
@@ -92,7 +92,18 @@ export function HistoryTab({ refreshKey }: { refreshKey?: number }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-gray-500 mb-3">{logs.length} entr{logs.length === 1 ? "y" : "ies"} saved locally</p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs text-gray-500">{logs.length} entr{logs.length === 1 ? "y" : "ies"} saved locally</p>
+        <button onClick={() => {
+          const blob = new Blob([exportLogs(address)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a"); a.href = url;
+          a.download = `vitramind_logs_${new Date().toISOString().slice(0,10)}.json`;
+          a.click(); URL.revokeObjectURL(url);
+        }} className="text-xs text-gray-500 hover:text-green-400 transition-colors">
+          Export JSON ↓
+        </button>
+      </div>
       {logs.map(entry => (
         <LogCard key={entry.id} entry={entry} onDelete={() => {
           deleteLog(address, entry.id);
