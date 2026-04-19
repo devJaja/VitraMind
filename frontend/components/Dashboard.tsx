@@ -1,11 +1,10 @@
-"use client";
-
 import { useAccount } from "wagmi";
 import { useEffect, useState } from "react";
 import { useProofRegistry } from "@/hooks/useProofRegistry";
 import { useZKStreak } from "@/hooks/useZKStreak";
 import { useGrowthNFT } from "@/hooks/useGrowthNFT";
 import { getLogStreak, getMoodAverage } from "@/lib/logStorage";
+import { growthTierLabel } from "@/lib/format";
 
 interface Props {
   onViewProofs?: () => void;
@@ -30,7 +29,7 @@ export function Dashboard({ onViewProofs }: Props) {
 
   const stats = [
     { label: "Total Proofs", value: proofCount.toString(), clickable: true },
-    { label: "Growth Level", value: level != null ? `Level ${level}` : "—", clickable: false },
+    { label: "Growth Level", value: level != null ? growthTierLabel(level) : "—", clickable: false },
     { label: "Local Streak", value: `${localStreak}d`, clickable: false },
     { label: "7d Mood Avg",  value: moodAvg ? `${moodAvg}/5` : "—", clickable: false },
   ];
