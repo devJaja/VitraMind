@@ -1,27 +1,38 @@
 "use client";
 
 import { useAccount } from "wagmi";
+import { useEffect, useState } from "react";
 import { useProofRegistry } from "@/hooks/useProofRegistry";
 import { useZKStreak } from "@/hooks/useZKStreak";
 import { useGrowthNFT } from "@/hooks/useGrowthNFT";
+import { getLogStreak, getMoodAverage } from "@/lib/logStorage";
 
 interface Props {
   onViewProofs?: () => void;
 }
 
 export function Dashboard({ onViewProofs }: Props) {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const { proofCount }  = useProofRegistry();
   const zkMilestones    = useZKStreak();
   const { level, streakDays, totalLogs } = useGrowthNFT();
+  const [localStreak, setLocalStreak] = useState(0);
+  const [moodAvg, setMoodAvg]         = useState(0);
+
+  useEffect(() => {
+    if (address) {
+      setLocalStreak(getLogStreak(address));
+      setMoodAvg(getMoodAverage(address, 7));
+    }
+  }, [address]);
 
   if (!isConnected) return null;
 
   const stats = [
     { label: "Total Proofs", value: proofCount.toString(), clickable: true },
     { label: "Growth Level", value: level != null ? `Level ${level}` : "—", clickable: false },
-    { label: "Streak",       value: streakDays != null ? `${streakDays}d` : "—", clickable: false },
-    { label: "Total Logs",   value: totalLogs != null ? totalLogs.toString() : "—", clickable: false },
+    { label: "Local Streak", value: `${localStreak}d`, clickable: false },
+    { label: "7d Mood Avg",  value: moodAvg ? `${moodAvg}/5` : "—", clickable: false },
   ];
 
   return (
