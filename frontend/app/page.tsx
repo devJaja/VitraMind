@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAccount, useChainId } from "wagmi";
 import { Dashboard } from "@/components/Dashboard";
 import { MoodChart } from "@/components/MoodChart";
+import { HabitHeatmap } from "@/components/HabitHeatmap";
 import { DailyLogForm } from "@/components/DailyLogForm";
 import { HistoryTab } from "@/components/HistoryTab";
 import { AITab } from "@/components/AITab";
@@ -69,6 +70,7 @@ export default function Home() {
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Growth</p>
           <Dashboard onViewProofs={() => setTab("Proofs")} />
           <MoodChart />
+          <HabitHeatmap />
           <RewardsBar />
         </section>
       )}
