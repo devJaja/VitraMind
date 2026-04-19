@@ -9,12 +9,8 @@ const geist = Geist({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "VitraMind — Personal Growth on Celo",
   description: "Privacy-first habit tracking with verifiable on-chain proofs. Built for MiniPay.",
-  manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "black-translucent" },
-  other: {
-    // MiniPay mini app discovery tag
-    "minipay-app": "true",
-  },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "VitraMind" },
+  other: { "minipay-app": "true" },
 };
 
 export const viewport: Viewport = {
