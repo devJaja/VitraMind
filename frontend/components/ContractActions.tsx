@@ -7,6 +7,7 @@ import { useMiniPayCUSD } from "@/hooks/useMiniPayCUSD";
 import { useStreakVerifier } from "@/hooks/useStreakVerifier";
 import { useGrowthIdentity } from "@/hooks/useGrowthIdentity";
 import { useIPFSExport } from "@/hooks/useIPFSExport";
+import { useProfileAnchor } from "@/hooks/useProfileAnchor";
 import { CONTRACTS } from "@/lib/contracts";
 
 const C = CONTRACTS.celo;
@@ -109,6 +110,7 @@ export function ProfileAnchorCard() {
   const { address } = useAccount();
   const [bio, setBio] = useState("");
   const { status, txHash, err, send } = useTx();
+  const { hasProfile, profileHash } = useProfileAnchor();
 
   function handleAnchor() {
     if (!C.ProfileAnchor || !address) return;
@@ -120,9 +122,17 @@ export function ProfileAnchorCard() {
     <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
       <p className="text-sm font-semibold text-white mb-1">🪪 Profile Anchor</p>
       <p className="text-xs text-gray-500 mb-3">Commit a hash of your identity on-chain. Raw data stays off-chain.</p>
+      {hasProfile && (
+        <div className="bg-green-950/40 border border-green-800/30 rounded-xl p-3 mb-3">
+          <p className="text-xs text-green-400">Profile anchored ✓</p>
+          <p className="text-xs font-mono text-gray-500 truncate mt-0.5">{profileHash}</p>
+        </div>
+      )}
       <input value={bio} onChange={e => setBio(e.target.value)} placeholder="Profile bio or identifier"
         className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500" />
-      <Btn onClick={handleAnchor} disabled={status === "pending" || !bio}>Anchor Profile</Btn>
+      <Btn onClick={handleAnchor} disabled={status === "pending" || !bio}>
+        {hasProfile ? "Update Profile" : "Anchor Profile"}
+      </Btn>
       <TxStatus status={status} txHash={txHash} err={err} />
     </div>
   );
