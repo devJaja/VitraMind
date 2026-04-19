@@ -1,17 +1,17 @@
 "use client";
 
-import { useAccount, useChainId } from "wagmi";
 import { useState } from "react";
+import { useAccount, useChainId } from "wagmi";
 import { Dashboard } from "@/components/Dashboard";
 import { DailyLogForm } from "@/components/DailyLogForm";
-import { ProfileAnchorCard, StreakAnchorCard, IPFSExportCard, GrowthIdentityCard, WellnessProtocolCard } from "@/components/ContractActions";
+import { HistoryTab } from "@/components/HistoryTab";
 import { ProofsTab } from "@/components/ProofsTab";
+import { ProfileAnchorCard, StreakAnchorCard, IPFSExportCard, GrowthIdentityCard, WellnessProtocolCard } from "@/components/ContractActions";
 import { useRewards } from "@/hooks/useRewards";
 import { CONTRACTS } from "@/lib/contracts";
 
 const contracts = CONTRACTS.celo;
-
-const TABS = ["Log", "Proofs", "Profile", "Streak", "Identity", "Wellness", "Export"] as const;
+const TABS = ["Log", "History", "Proofs", "Profile", "Streak", "Identity", "Wellness", "Export"] as const;
 type Tab = typeof TABS[number];
 
 function RewardsBar() {
@@ -19,7 +19,7 @@ function RewardsBar() {
   return (
     <div className="grid grid-cols-3 gap-2">
       {[
-        { label: "Points", value: points.toString() },
+        { label: "Points",      value: points.toString() },
         { label: "cUSD Earned", value: `${(Number(claimedCUSD) / 1e18).toFixed(2)}` },
         { label: "Best Streak", value: `${highestStreakRewarded}d` },
       ].map(({ label, value }) => (
@@ -36,6 +36,11 @@ export default function Home() {
   const { isConnected } = useAccount();
   const chainId = useChainId();
   const [tab, setTab] = useState<Tab>("Log");
+  const [historyKey, setHistoryKey] = useState(0);
+
+  function handleLogSaved() {
+    setHistoryKey(k => k + 1); // trigger HistoryTab refresh
+  }
 
   return (
     <div className="space-y-6">
@@ -49,14 +54,14 @@ export default function Home() {
           Grow every day.<br />
           <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Prove it on Celo.</span>
         </h1>
-        <p className="text-sm text-gray-400 max-w-xs">Track habits, moods & reflections. Only cryptographic proofs touch the blockchain.</p>
+        <p className="text-sm text-gray-400 max-w-xs">Track habits, moods & reflections. AI insights powered by Gemini. Only cryptographic proofs touch the blockchain.</p>
         <div className="mt-4 inline-flex items-center gap-1.5 bg-black/40 border border-green-900/50 rounded-full px-3 py-1">
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
           <span className="text-xs text-green-400 font-medium">{chainId === 42220 ? "Celo Mainnet" : "Celo (switching…)"}</span>
         </div>
       </div>
 
-      {/* Dashboard + Rewards — only when connected */}
+      {/* Dashboard + Rewards */}
       {isConnected && (
         <section className="space-y-3">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Growth</p>
@@ -81,10 +86,11 @@ export default function Home() {
       <div>
         {tab === "Log" && (
           <div className="rounded-2xl overflow-hidden border border-gray-800 bg-gradient-to-b from-gray-900 to-black p-5">
-            <DailyLogForm proofRegistryAddress={contracts.ProofRegistry} />
+            <DailyLogForm proofRegistryAddress={contracts.ProofRegistry} onLogSaved={handleLogSaved} />
           </div>
         )}
-        {tab === "Proofs"    && <ProofsTab />}
+        {tab === "History"  && <HistoryTab refreshKey={historyKey} />}
+        {tab === "Proofs"   && <ProofsTab />}
         {tab === "Profile"  && <ProfileAnchorCard />}
         {tab === "Streak"   && <StreakAnchorCard />}
         {tab === "Identity" && <GrowthIdentityCard />}
