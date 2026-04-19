@@ -5,12 +5,13 @@ import { useState } from "react";
 import { Dashboard } from "@/components/Dashboard";
 import { DailyLogForm } from "@/components/DailyLogForm";
 import { ProfileAnchorCard, StreakAnchorCard, IPFSExportCard, GrowthIdentityCard, WellnessProtocolCard } from "@/components/ContractActions";
+import { ProofsTab } from "@/components/ProofsTab";
 import { useRewards } from "@/hooks/useRewards";
 import { CONTRACTS } from "@/lib/contracts";
 
 const contracts = CONTRACTS.celo;
 
-const TABS = ["Log", "Profile", "Streak", "Identity", "Wellness", "Export"] as const;
+const TABS = ["Log", "Proofs", "Profile", "Streak", "Identity", "Wellness", "Export"] as const;
 type Tab = typeof TABS[number];
 
 function RewardsBar() {
@@ -59,7 +60,7 @@ export default function Home() {
       {isConnected && (
         <section className="space-y-3">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Growth</p>
-          <Dashboard />
+          <Dashboard onViewProofs={() => setTab("Proofs")} />
           <RewardsBar />
         </section>
       )}
@@ -83,6 +84,7 @@ export default function Home() {
             <DailyLogForm proofRegistryAddress={contracts.ProofRegistry} />
           </div>
         )}
+        {tab === "Proofs"    && <ProofsTab />}
         {tab === "Profile"  && <ProfileAnchorCard />}
         {tab === "Streak"   && <StreakAnchorCard />}
         {tab === "Identity" && <GrowthIdentityCard />}
