@@ -87,6 +87,8 @@ export async function POST(req: NextRequest) {
 
     const { logs, mode = "full_insight", question } = body;
     if (!logs?.length) return NextResponse.json({ error: "No logs provided" }, { status: 400 });
+    if (logs.length > 100) return NextResponse.json({ error: "Too many logs" }, { status: 400 });
+    if (question && question.length > 500) return NextResponse.json({ error: "Question too long" }, { status: 400 });
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const ctx = buildContext(logs);
