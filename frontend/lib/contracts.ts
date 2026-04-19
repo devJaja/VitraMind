@@ -33,3 +33,7 @@ export const CONTRACTS: Record<string, Record<string, `0x${string}` | undefined>
     WellnessProtocol:   "0xD8Ad321862084080732D745335f6370AddF3F380",
   },
 };
+
+export const CELOSCAN = "https://celoscan.io";
+export function celoscanTx(hash: string)      { return `${CELOSCAN}/tx/${hash}`; }
+export function celoscanAddr(addr: string)    { return `${CELOSCAN}/address/${addr}`; }
