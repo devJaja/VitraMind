@@ -199,6 +199,7 @@ export function GrowthIdentityCard() {
   const { address } = useAccount();
   const [level, setLevel] = useState("1");
   const { status, txHash, err, send } = useTx();
+  const { hasIdentity, growthLevel, publishedAt } = useGrowthIdentity();
 
   function handlePublish() {
     if (!C.GrowthIdentity || !address) return;
@@ -210,9 +211,17 @@ export function GrowthIdentityCard() {
     <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
       <p className="text-sm font-semibold text-white mb-1">🌐 Growth Identity</p>
       <p className="text-xs text-gray-500 mb-3">Publish a composable growth identity commitment for cross-app verification.</p>
+      {hasIdentity && (
+        <div className="bg-blue-950/40 border border-blue-800/30 rounded-xl p-3 mb-3">
+          <p className="text-xs text-blue-400">Active identity · Level <strong>{growthLevel}</strong></p>
+          {publishedAt && <p className="text-xs text-gray-500 mt-0.5">Published: {new Date(Number(publishedAt) * 1000).toLocaleDateString()}</p>}
+        </div>
+      )}
       <input type="number" min="1" max="100" value={level} onChange={e => setLevel(e.target.value)} placeholder="Growth level (1-100)"
         className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500" />
-      <Btn onClick={handlePublish} disabled={status === "pending" || !level}>Publish Identity</Btn>
+      <Btn onClick={handlePublish} disabled={status === "pending" || !level}>
+        {hasIdentity ? "Update Identity" : "Publish Identity"}
+      </Btn>
       <TxStatus status={status} txHash={txHash} err={err} />
     </div>
   );
