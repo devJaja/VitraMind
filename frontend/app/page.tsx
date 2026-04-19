@@ -13,7 +13,7 @@ import { ProfileAnchorCard, StreakAnchorCard, IPFSExportCard, GrowthIdentityCard
 import { useRewards } from "@/hooks/useRewards";
 import { useToast } from "@/components/Toast";
 import { formatCUSD } from "@/lib/format";
-import { CONTRACTS } from "@/lib/contracts";
+import { CONTRACTS, celoscanAddr } from "@/lib/contracts";
 
 const contracts = CONTRACTS.celo;
 const TABS = ["Log", "AI", "History", "Proofs", "Profile", "Streak", "Identity", "Wellness", "Export"] as const;
@@ -110,10 +110,12 @@ export default function Home() {
 
       <p className="text-xs text-gray-700 text-center pb-4">
         Raw data never leaves your device ·{" "}
-        <a href={`https://celoscan.io/address/${contracts.ProofRegistry}`} target="_blank" rel="noopener noreferrer"
+        <a href={celoscanAddr(contracts.ProofRegistry!)} target="_blank" rel="noopener noreferrer"
           className="text-gray-500 hover:text-green-400 transition-colors underline underline-offset-2">
           View ProofRegistry ↗
         </a>
+        {" · "}
+        <span className="text-gray-700">v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
       </p>
       {toastNode}
     </div>
