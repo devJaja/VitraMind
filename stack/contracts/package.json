@@ -1,0 +1,16 @@
+{
+  "name": "vitramind-contracts-stacks",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "check": "cd clarity && clarinet check",
+    "test": "cd clarity && npm install && npm test",
+    "deploy:testnet": "node scripts/deploy-stacks.js --network testnet",
+    "deploy:mainnet": "node scripts/deploy-stacks.js --network mainnet"
+  },
+  "dependencies": {
+    "@stacks/network": "^6.17.0",
+    "@stacks/transactions": "^6.17.0",
+    "dotenv": "^16.4.0"
+  }
+}
