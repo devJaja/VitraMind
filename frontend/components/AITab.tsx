@@ -40,6 +40,12 @@ export function AITab({ refreshKey }: { refreshKey?: number }) {
     if (address) setLogCount(getLogs(address).length);
   }, [address, refreshKey]);
 
+  // Cache weekly summary in sessionStorage to avoid re-generating on tab switch
+  useEffect(() => {
+    const cached = sessionStorage.getItem(`vitramind_weekly_${address}`);
+    if (cached) setWeekly(cached);
+  }, [address]);
+
   async function callAI(mode: string, q?: string) {
     if (!address) return null;
     const logs = getLogs(address).map(l => ({
@@ -61,7 +67,11 @@ export function AITab({ refreshKey }: { refreshKey?: number }) {
 
   async function handleWeeklySummary() {
     setWeeklyLoading(true); setError(undefined);
-    try { setWeekly(await callAI("weekly_summary") ?? undefined); }
+    try {
+      const result = await callAI("weekly_summary") ?? undefined;
+      setWeekly(result);
+      if (result) sessionStorage.setItem(`vitramind_weekly_${address}`, result);
+    }
     catch (e) { setError(e instanceof Error ? e.message : "Failed"); }
     finally { setWeeklyLoading(false); }
   }
