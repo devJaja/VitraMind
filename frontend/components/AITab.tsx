@@ -143,9 +143,13 @@ export function AITab({ refreshKey }: { refreshKey?: number }) {
           </button>
         </div>
 
-        {answer && (
+      {answer && (
           <div className="bg-purple-950/40 border border-purple-800/30 rounded-xl p-3 mt-3">
             <InsightBlock text={answer} />
+            <button onClick={() => setAnswer(undefined)}
+              className="text-xs text-gray-600 hover:text-gray-400 mt-2 transition-colors">
+              Clear ✕
+            </button>
           </div>
         )}
       </div>
