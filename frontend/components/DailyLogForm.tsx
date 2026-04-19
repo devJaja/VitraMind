@@ -158,6 +158,7 @@ export function DailyLogForm({ proofRegistryAddress, onLogSaved }: Props) {
           <label className="block text-sm font-medium text-gray-300 mb-2">Habits completed today</label>
           <input type="text" value={habits} onChange={e => setHabits(e.target.value)}
             placeholder="e.g. meditation, exercise, reading"
+            maxLength={200}
             className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500" />
         </div>
 
@@ -166,6 +167,7 @@ export function DailyLogForm({ proofRegistryAddress, onLogSaved }: Props) {
           <label className="block text-sm font-medium text-gray-300 mb-2">Daily reflection</label>
           <textarea value={reflection} onChange={e => setReflection(e.target.value)}
             placeholder="What did you learn or feel today?" rows={3}
+            maxLength={1000}
             className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
         </div>
 
