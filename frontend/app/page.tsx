@@ -3,12 +3,14 @@
 import { Dashboard } from "@/components/Dashboard";
 import { DailyLogForm } from "@/components/DailyLogForm";
 import { CONTRACTS } from "@/lib/contracts";
-import { useChainId, useAccount } from "wagmi";
+import { useAccount } from "wagmi";
 
 export default function Home() {
   const chainId = useChainId();
   const { isConnected } = useAccount();
-  const contracts = chainId === 42220 ? CONTRACTS.celo : CONTRACTS.alfajores;
+  // Always use Celo mainnet contracts regardless of wallet's current chain.
+  // Chain switching happens inside useMiniPayCUSD before the tx is sent.
+  const contracts = CONTRACTS.celo;
 
   return (
     <div className="space-y-8">
