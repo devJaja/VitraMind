@@ -1,0 +1,9 @@
+node_modules/
+artifacts/
+cache/
+.env
+typechain-types/
+deployments.*.json
+# ZK trusted setup keys and build artifacts (large binary files)
+zk/keys/
+zk/build/
