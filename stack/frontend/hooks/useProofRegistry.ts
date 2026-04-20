@@ -1,50 +1,29 @@
 "use client";
 
-import { useAccount, useReadContract } from "wagmi";
-import { CONTRACTS } from "@/lib/contracts";
+import { useEffect, useState } from "react";
+import { callReadOnlyFunction, cvToValue, principalCV } from "@stacks/transactions";
+import { CONTRACTS, NETWORK } from "@/lib/contracts";
+import { useStacksAuth } from "@/lib/stacksAuth";
 
-const ABI = [
-  {
-    name: "proofCount",
-    type: "function",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [{ type: "uint256" }],
-    stateMutability: "view",
-  },
-  {
-    name: "verifyProof",
-    type: "function",
-    inputs: [
-      { name: "user",  type: "address" },
-      { name: "hash",  type: "bytes32" },
-    ],
-    outputs: [{ type: "bool" }],
-    stateMutability: "view",
-  },
-] as const;
-
-/**
- * useProofRegistry
- *
- * Reads the user's proof count from ProofRegistry and exposes a
- * verifyProof helper for on-demand hash verification.
- */
 export function useProofRegistry() {
-  const { address } = useAccount();
-  // Always read from Celo mainnet — wallet chain doesn't affect read calls
-  const registryAddress = CONTRACTS.celo.ProofRegistry;
+  const { stxAddress } = useStacksAuth();
+  const [proofCount, setProofCount] = useState(0);
 
-  const { data: proofCount, isLoading } = useReadContract({
-    address: registryAddress,
-    abi: ABI,
-    functionName: "proofCount",
-    args: [address!],
-    query: { enabled: !!address && !!registryAddress },
-  });
+  useEffect(() => {
+    if (!stxAddress) return;
+    const [addr, name] = CONTRACTS.proofRegistry.split(".");
+    callReadOnlyFunction({
+      contractAddress: addr,
+      contractName: name,
+      functionName: "get-proof-count",
+      functionArgs: [principalCV(stxAddress)],
+      network: NETWORK,
+      senderAddress: stxAddress,
+    }).then(cv => {
+      const val = cvToValue(cv);
+      setProofCount(typeof val === "bigint" ? Number(val) : Number(val ?? 0));
+    }).catch(() => {});
+  }, [stxAddress]);
 
-  return {
-    proofCount: proofCount ?? BigInt(0),
-    isLoading,
-    registryAddress,
-  };
+  return { proofCount };
 }
