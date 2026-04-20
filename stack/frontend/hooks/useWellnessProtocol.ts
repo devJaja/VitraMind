@@ -1,55 +1,33 @@
 "use client";
 
-import { useAccount, useReadContract } from "wagmi";
-import { CONTRACTS } from "@/lib/contracts";
-
-const ABI = [{
-  name: "optedIn", type: "function",
-  inputs: [{ name: "", type: "uint256" }, { name: "", type: "address" }],
-  outputs: [{ type: "bool" }],
-  stateMutability: "view",
-}, {
-  name: "protocolCount", type: "function",
-  inputs: [],
-  outputs: [{ type: "uint256" }],
-  stateMutability: "view",
-}, {
-  name: "protocols", type: "function",
-  inputs: [{ name: "", type: "uint256" }],
-  outputs: [
-    { name: "name",      type: "string"  },
-    { name: "schemaCID", type: "string"  },
-    { name: "creator",   type: "address" },
-    { name: "active",    type: "bool"    },
-    { name: "createdAt", type: "uint256" },
-  ],
-  stateMutability: "view",
-}] as const;
+import { useEffect, useState } from "react";
+import { callReadOnlyFunction, cvToValue, principalCV, uintCV } from "@stacks/transactions";
+import { CONTRACTS, NETWORK } from "@/lib/contracts";
+import { useStacksAuth } from "@/lib/stacksAuth";
 
 export function useWellnessProtocol(protocolId = 0) {
-  const { address } = useAccount();
-  const addr = CONTRACTS.celo.WellnessProtocol;
+  const { stxAddress } = useStacksAuth();
+  const [isOptedIn, setIsOptedIn]         = useState(false);
+  const [protocolCount, setProtocolCount] = useState(0);
 
-  const { data: isOptedIn } = useReadContract({
-    address: addr, abi: ABI, functionName: "optedIn",
-    args: [BigInt(protocolId), address!],
-    query: { enabled: !!address && !!addr },
-  });
+  useEffect(() => {
+    const [addr, name] = CONTRACTS.wellnessProtocol.split(".");
 
-  const { data: count } = useReadContract({
-    address: addr, abi: ABI, functionName: "protocolCount",
-    query: { enabled: !!addr },
-  });
+    callReadOnlyFunction({
+      contractAddress: addr, contractName: name,
+      functionName: "get-protocol-count",
+      functionArgs: [],
+      network: NETWORK, senderAddress: addr,
+    }).then(cv => setProtocolCount(Number(cvToValue(cv) ?? 0))).catch(() => {});
 
-  const { data: protocol } = useReadContract({
-    address: addr, abi: ABI, functionName: "protocols",
-    args: [BigInt(protocolId)],
-    query: { enabled: !!addr },
-  });
+    if (!stxAddress) return;
+    callReadOnlyFunction({
+      contractAddress: addr, contractName: name,
+      functionName: "is-opted-in",
+      functionArgs: [uintCV(protocolId), principalCV(stxAddress)],
+      network: NETWORK, senderAddress: stxAddress,
+    }).then(cv => setIsOptedIn(Boolean(cvToValue(cv)))).catch(() => {});
+  }, [stxAddress, protocolId]);
 
-  return {
-    isOptedIn: isOptedIn ?? false,
-    protocolCount: count ?? BigInt(0),
-    protocol: protocol ? { name: protocol[0], schemaCID: protocol[1], active: protocol[3] } : undefined,
-  };
+  return { isOptedIn, protocolCount };
 }
