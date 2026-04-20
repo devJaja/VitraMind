@@ -1,95 +1,60 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
-import { keccak256, encodePacked } from "viem";
-import { useMiniPayCUSD } from "@/hooks/useMiniPayCUSD";
+import {
+  openContractCall,
+  bufferCVFromString,
+  uintCV,
+  stringAsciiCV,
+  principalCV,
+} from "@stacks/connect";
+import { sha256 } from "@noble/hashes/sha256";
+import { bytesToHex } from "@noble/hashes/utils";
+import { CONTRACTS, NETWORK, explorerTx } from "@/lib/contracts";
+import { APP_DETAILS } from "@/lib/stacks";
+import { useStacksAuth } from "@/lib/stacksAuth";
+import { useProfileAnchor } from "@/hooks/useProfileAnchor";
 import { useStreakVerifier } from "@/hooks/useStreakVerifier";
 import { useGrowthIdentity } from "@/hooks/useGrowthIdentity";
 import { useIPFSExport } from "@/hooks/useIPFSExport";
-import { useProfileAnchor } from "@/hooks/useProfileAnchor";
-import { CONTRACTS } from "@/lib/contracts";
-
-const C = CONTRACTS.celo;
-
-const PROFILE_ABI = [{
-  name: "anchorProfile", type: "function",
-  inputs: [{ name: "hash", type: "bytes32" }],
-  outputs: [], stateMutability: "nonpayable",
-}] as const;
-
-const STREAK_ABI = [{
-  name: "anchorStreak", type: "function",
-  inputs: [
-    { name: "user", type: "address" },
-    { name: "proofHash", type: "bytes32" },
-    { name: "currentStreak", type: "uint32" },
-  ],
-  outputs: [], stateMutability: "nonpayable",
-}] as const;
-
-const EXPORT_ABI = [{
-  name: "anchorExport", type: "function",
-  inputs: [
-    { name: "cid", type: "string" },
-    { name: "contentHash", type: "bytes32" },
-    { name: "exportType", type: "uint8" },
-  ],
-  outputs: [], stateMutability: "nonpayable",
-}] as const;
-
-const IDENTITY_ABI = [{
-  name: "publishIdentity", type: "function",
-  inputs: [
-    { name: "commitment", type: "bytes32" },
-    { name: "growthLevel", type: "uint8" },
-  ],
-  outputs: [], stateMutability: "nonpayable",
-}] as const;
-
-const WELLNESS_OPT_ABI = [{
-  name: "optIn", type: "function",
-  inputs: [{ name: "protocolId", type: "uint256" }],
-  outputs: [], stateMutability: "nonpayable",
-}] as const;
-
-const WELLNESS_PROGRESS_ABI = [{
-  name: "commitProgress", type: "function",
-  inputs: [
-    { name: "protocolId", type: "uint256" },
-    { name: "commitmentHash", type: "bytes32" },
-  ],
-  outputs: [], stateMutability: "nonpayable",
-}] as const;
 
 type Status = "idle" | "pending" | "done" | "error";
 
-function useTx() {
-  const [status, setStatus] = useState<Status>("idle");
-  const [txHash, setTxHash] = useState<string>();
-  const [err, setErr] = useState<string>();
-  const { writeContract } = useMiniPayCUSD();
-
-  async function send(params: Parameters<typeof writeContract>[0]) {
-    setStatus("pending"); setErr(undefined);
-    try {
-      const hash = await writeContract(params);
-      setTxHash(hash); setStatus("done");
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-      setStatus("error");
-    }
-  }
-
-  return { status, txHash, err, send };
+/** Hash a string to a 32-byte buffer using SHA-256 */
+function hashToBuffer(input: string): Uint8Array {
+  return sha256(new TextEncoder().encode(input));
 }
 
-function TxStatus({ status, txHash, err }: { status: Status; txHash?: string; err?: string }) {
-  if (status === "pending") return <p className="text-xs text-yellow-400 mt-2">⏳ Sending…</p>;
+function useTx() {
+  const [status, setStatus] = useState<Status>("idle");
+  const [txId, setTxId]     = useState<string>();
+  const [err, setErr]       = useState<string>();
+
+  function send(contractId: string, functionName: string, functionArgs: unknown[]) {
+    const [contractAddress, contractName] = contractId.split(".");
+    setStatus("pending"); setErr(undefined);
+    openContractCall({
+      contractAddress,
+      contractName,
+      functionName,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      functionArgs: functionArgs as any[],
+      network: NETWORK,
+      appDetails: APP_DETAILS,
+      onFinish: ({ txId: id }) => { setTxId(id); setStatus("done"); },
+      onCancel: () => setStatus("idle"),
+    });
+  }
+
+  return { status, txId, err, send };
+}
+
+function TxStatus({ status, txId, err }: { status: Status; txId?: string; err?: string }) {
+  if (status === "pending") return <p className="text-xs text-yellow-400 mt-2">⏳ Awaiting wallet…</p>;
   if (status === "done") return (
     <p className="text-xs text-green-400 mt-2">
-      ✓ Done{" "}
-      {txHash && <a href={`https://celoscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="underline">View ↗</a>}
+      ✓ Broadcast{" "}
+      {txId && <a href={explorerTx(txId)} target="_blank" rel="noopener noreferrer" className="underline">View ↗</a>}
     </p>
   );
   if (status === "error") return <p className="text-xs text-red-400 mt-2 break-words">✗ {err}</p>;
@@ -99,7 +64,7 @@ function TxStatus({ status, txHash, err }: { status: Status; txHash?: string; er
 function Btn({ onClick, disabled, children }: { onClick: () => void; disabled: boolean; children: React.ReactNode }) {
   return (
     <button onClick={onClick} disabled={disabled}
-      className="w-full bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-400 hover:to-emerald-300 disabled:opacity-50 text-black font-bold py-2.5 rounded-xl text-sm transition-all mt-3">
+      className="w-full bg-gradient-to-r from-orange-500 to-amber-400 hover:from-orange-400 hover:to-amber-300 disabled:opacity-50 text-black font-bold py-2.5 rounded-xl text-sm transition-all mt-3">
       {children}
     </button>
   );
@@ -107,15 +72,15 @@ function Btn({ onClick, disabled, children }: { onClick: () => void; disabled: b
 
 // ── ProfileAnchor ─────────────────────────────────────────────────────────────
 export function ProfileAnchorCard() {
-  const { address } = useAccount();
+  const { stxAddress } = useStacksAuth();
   const [bio, setBio] = useState("");
-  const { status, txHash, err, send } = useTx();
+  const { status, txId, err, send } = useTx();
   const { hasProfile, profileHash } = useProfileAnchor();
 
   function handleAnchor() {
-    if (!C.ProfileAnchor || !address) return;
-    const hash = keccak256(encodePacked(["address", "string", "uint256"], [address, bio, BigInt(Date.now())]));
-    send({ address: C.ProfileAnchor, abi: PROFILE_ABI, functionName: "anchorProfile", args: [hash] });
+    if (!stxAddress || !bio) return;
+    const hash = hashToBuffer(`${stxAddress}:${bio}:${Date.now()}`);
+    send(CONTRACTS.profileAnchor, "anchor-profile", [bufferCVFromString(bytesToHex(hash))]);
   }
 
   return (
@@ -129,47 +94,47 @@ export function ProfileAnchorCard() {
         </div>
       )}
       <input value={bio} onChange={e => setBio(e.target.value)} placeholder="Profile bio or identifier"
-        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500" />
-      <Btn onClick={handleAnchor} disabled={status === "pending" || !bio}>
+        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+      <Btn onClick={handleAnchor} disabled={status === "pending" || !bio || !stxAddress}>
         {hasProfile ? "Update Profile" : "Anchor Profile"}
       </Btn>
-      <TxStatus status={status} txHash={txHash} err={err} />
+      <TxStatus status={status} txId={txId} err={err} />
     </div>
   );
 }
 
 // ── StreakVerifier ────────────────────────────────────────────────────────────
 export function StreakAnchorCard() {
-  const { address } = useAccount();
+  const { stxAddress } = useStacksAuth();
   const [streak, setStreak] = useState("1");
-  const { status, txHash, err, send } = useTx();
+  const { status, txId, err, send } = useTx();
   const { currentStreak, lastSubmittedAt, streakCount } = useStreakVerifier();
 
-  const lastDate = lastSubmittedAt
-    ? new Date(Number(lastSubmittedAt) * 1000).toLocaleString()
-    : null;
-
   function handleAnchor() {
-    if (!C.StreakVerifier || !address) return;
-    const proofHash = keccak256(encodePacked(["address", "uint32", "uint256"], [address, Number(streak), BigInt(Date.now())]));
-    send({ address: C.StreakVerifier, abi: STREAK_ABI, functionName: "anchorStreak", args: [address, proofHash, Number(streak)] });
+    if (!stxAddress || !streak) return;
+    const proofHash = hashToBuffer(`${stxAddress}:${streak}:${Date.now()}`);
+    send(CONTRACTS.streakVerifier, "anchor-streak", [
+      principalCV(stxAddress),
+      bufferCVFromString(bytesToHex(proofHash)),
+      uintCV(Number(streak)),
+    ]);
   }
 
   return (
     <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
       <p className="text-sm font-semibold text-white mb-1">🔥 Streak Anchor</p>
-      <p className="text-xs text-gray-500 mb-3">Anchor today's habit streak proof on-chain (23h cooldown enforced).</p>
+      <p className="text-xs text-gray-500 mb-3">Anchor today's habit streak proof on-chain (23h cooldown enforced by oracle).</p>
       {currentStreak > 0 && (
         <div className="bg-orange-950/40 border border-orange-800/30 rounded-xl p-3 mb-3">
           <p className="text-xs text-orange-400">Current on-chain streak: <strong>{currentStreak} days</strong></p>
-          {lastDate && <p className="text-xs text-gray-500 mt-0.5">Last anchored: {lastDate}</p>}
-          <p className="text-xs text-gray-500">Total anchors: {streakCount.toString()}</p>
+          {lastSubmittedAt && <p className="text-xs text-gray-500 mt-0.5">Last block: {lastSubmittedAt}</p>}
+          <p className="text-xs text-gray-500">Total anchors: {streakCount}</p>
         </div>
       )}
-      <input type="number" min="1" value={streak} onChange={e => setStreak(e.target.value)} placeholder="Current streak days"
-        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500" />
-      <Btn onClick={handleAnchor} disabled={status === "pending" || !streak}>Anchor Streak</Btn>
-      <TxStatus status={status} txHash={txHash} err={err} />
+      <input type="number" min="1" value={streak} onChange={e => setStreak(e.target.value)}
+        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+      <Btn onClick={handleAnchor} disabled={status === "pending" || !streak || !stxAddress}>Anchor Streak</Btn>
+      <TxStatus status={status} txId={txId} err={err} />
     </div>
   );
 }
@@ -178,15 +143,20 @@ export function StreakAnchorCard() {
 const EXPORT_TYPES = ["FULL", "LOGS", "INSIGHTS", "ANALYTICS"];
 
 export function IPFSExportCard() {
+  const { stxAddress } = useStacksAuth();
   const [cid, setCid] = useState("");
   const [exportType, setExportType] = useState(0);
-  const { status, txHash, err, send } = useTx();
+  const { status, txId, err, send } = useTx();
   const { latestCID, exportType: lastType, exportedAt, exportCount } = useIPFSExport();
 
   function handleAnchor() {
-    if (!C.IPFSExportRegistry || !cid) return;
-    const contentHash = keccak256(encodePacked(["string"], [cid]));
-    send({ address: C.IPFSExportRegistry, abi: EXPORT_ABI, functionName: "anchorExport", args: [cid, contentHash, exportType] });
+    if (!cid) return;
+    const contentHash = hashToBuffer(cid);
+    send(CONTRACTS.ipfsExportRegistry, "anchor-export", [
+      stringAsciiCV(cid),
+      bufferCVFromString(bytesToHex(contentHash)),
+      uintCV(exportType),
+    ]);
   }
 
   return (
@@ -195,34 +165,37 @@ export function IPFSExportCard() {
       <p className="text-xs text-gray-500 mb-3">Anchor an encrypted IPFS export CID on-chain for verifiable data portability.</p>
       {latestCID && (
         <div className="bg-gray-800/60 rounded-xl p-3 mb-3">
-          <p className="text-xs text-gray-400">Latest export: <span className="text-green-400">{lastType}</span></p>
+          <p className="text-xs text-gray-400">Latest: <span className="text-orange-400">{lastType}</span></p>
           <p className="text-xs font-mono text-gray-500 truncate">{latestCID}</p>
-          {exportedAt && <p className="text-xs text-gray-600 mt-0.5">{new Date(Number(exportedAt) * 1000).toLocaleString()} · {exportCount.toString()} total</p>}
+          {exportedAt && <p className="text-xs text-gray-600 mt-0.5">Block {exportedAt} · {exportCount} total</p>}
         </div>
       )}
       <input value={cid} onChange={e => setCid(e.target.value)} placeholder="IPFS CID (e.g. Qm...)"
-        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 mb-2" />
+        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 mb-2" />
       <select value={exportType} onChange={e => setExportType(Number(e.target.value))}
-        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
         {EXPORT_TYPES.map((t, i) => <option key={t} value={i}>{t}</option>)}
       </select>
-      <Btn onClick={handleAnchor} disabled={status === "pending" || !cid}>Anchor Export</Btn>
-      <TxStatus status={status} txHash={txHash} err={err} />
+      <Btn onClick={handleAnchor} disabled={status === "pending" || !cid || !stxAddress}>Anchor Export</Btn>
+      <TxStatus status={status} txId={txId} err={err} />
     </div>
   );
 }
 
 // ── GrowthIdentity ────────────────────────────────────────────────────────────
 export function GrowthIdentityCard() {
-  const { address } = useAccount();
+  const { stxAddress } = useStacksAuth();
   const [level, setLevel] = useState("1");
-  const { status, txHash, err, send } = useTx();
+  const { status, txId, err, send } = useTx();
   const { hasIdentity, growthLevel, publishedAt } = useGrowthIdentity();
 
   function handlePublish() {
-    if (!C.GrowthIdentity || !address) return;
-    const commitment = keccak256(encodePacked(["address", "uint8", "uint256"], [address, Number(level), BigInt(Date.now())]));
-    send({ address: C.GrowthIdentity, abi: IDENTITY_ABI, functionName: "publishIdentity", args: [commitment, Number(level)] });
+    if (!stxAddress || !level) return;
+    const commitment = hashToBuffer(`${stxAddress}:${level}:${Date.now()}`);
+    send(CONTRACTS.growthIdentity, "publish-identity", [
+      bufferCVFromString(bytesToHex(commitment)),
+      uintCV(Number(level)),
+    ]);
   }
 
   return (
@@ -232,35 +205,38 @@ export function GrowthIdentityCard() {
       {hasIdentity && (
         <div className="bg-blue-950/40 border border-blue-800/30 rounded-xl p-3 mb-3">
           <p className="text-xs text-blue-400">Active identity · Level <strong>{growthLevel}</strong></p>
-          {publishedAt && <p className="text-xs text-gray-500 mt-0.5">Published: {new Date(Number(publishedAt) * 1000).toLocaleDateString()}</p>}
+          {publishedAt && <p className="text-xs text-gray-500 mt-0.5">Block: {publishedAt}</p>}
         </div>
       )}
-      <input type="number" min="1" max="100" value={level} onChange={e => setLevel(e.target.value)} placeholder="Growth level (1-100)"
-        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500" />
-      <Btn onClick={handlePublish} disabled={status === "pending" || !level}>
+      <input type="number" min="1" max="100" value={level} onChange={e => setLevel(e.target.value)}
+        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
+      <Btn onClick={handlePublish} disabled={status === "pending" || !level || !stxAddress}>
         {hasIdentity ? "Update Identity" : "Publish Identity"}
       </Btn>
-      <TxStatus status={status} txHash={txHash} err={err} />
+      <TxStatus status={status} txId={txId} err={err} />
     </div>
   );
 }
 
 // ── WellnessProtocol ──────────────────────────────────────────────────────────
 export function WellnessProtocolCard() {
+  const { stxAddress } = useStacksAuth();
   const [protocolId, setProtocolId] = useState("0");
-  const [progress, setProgress] = useState("");
+  const [progressNote, setProgressNote] = useState("");
   const [mode, setMode] = useState<"optin" | "progress">("optin");
-  const { status, txHash, err, send } = useTx();
+  const { status, txId, err, send } = useTx();
 
   function handleOptIn() {
-    if (!C.WellnessProtocol) return;
-    send({ address: C.WellnessProtocol, abi: WELLNESS_OPT_ABI, functionName: "optIn", args: [BigInt(protocolId)] });
+    send(CONTRACTS.wellnessProtocol, "opt-in", [uintCV(Number(protocolId))]);
   }
 
   function handleProgress() {
-    if (!C.WellnessProtocol || !progress) return;
-    const commitmentHash = keccak256(encodePacked(["string", "uint256"], [progress, BigInt(Date.now())]));
-    send({ address: C.WellnessProtocol, abi: WELLNESS_PROGRESS_ABI, functionName: "commitProgress", args: [BigInt(protocolId), commitmentHash] });
+    if (!progressNote) return;
+    const commitmentHash = hashToBuffer(`${progressNote}:${Date.now()}`);
+    send(CONTRACTS.wellnessProtocol, "commit-progress", [
+      uintCV(Number(protocolId)),
+      bufferCVFromString(bytesToHex(commitmentHash)),
+    ]);
   }
 
   return (
@@ -270,21 +246,22 @@ export function WellnessProtocolCard() {
       <div className="flex gap-2 mb-3">
         {(["optin", "progress"] as const).map(m => (
           <button key={m} onClick={() => setMode(m)}
-            className={`text-xs px-3 py-1 rounded-full font-medium transition-all ${mode === m ? "bg-green-500 text-black" : "bg-gray-700 text-gray-400"}`}>
+            className={`text-xs px-3 py-1 rounded-full font-medium transition-all ${mode === m ? "bg-orange-500 text-black" : "bg-gray-700 text-gray-400"}`}>
             {m === "optin" ? "Opt In" : "Commit Progress"}
           </button>
         ))}
       </div>
       <input type="number" min="0" value={protocolId} onChange={e => setProtocolId(e.target.value)} placeholder="Protocol ID"
-        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 mb-2" />
+        className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 mb-2" />
       {mode === "progress" && (
-        <input value={progress} onChange={e => setProgress(e.target.value)} placeholder="Progress note (hashed locally)"
-          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500" />
+        <input value={progressNote} onChange={e => setProgressNote(e.target.value)} placeholder="Progress note (hashed locally)"
+          className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500" />
       )}
-      <Btn onClick={mode === "optin" ? handleOptIn : handleProgress} disabled={status === "pending"}>
+      <Btn onClick={mode === "optin" ? handleOptIn : handleProgress}
+        disabled={status === "pending" || !stxAddress || (mode === "progress" && !progressNote)}>
         {mode === "optin" ? "Opt In" : "Commit Progress"}
       </Btn>
-      <TxStatus status={status} txHash={txHash} err={err} />
+      <TxStatus status={status} txId={txId} err={err} />
     </div>
   );
 }
