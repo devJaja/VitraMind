@@ -1,51 +1,35 @@
 "use client";
 
-import { useAccount, useReadContract, useChainId } from "wagmi";
-import { CONTRACTS } from "@/lib/contracts";
+import { useEffect, useState } from "react";
+import { callReadOnlyFunction, cvToValue, principalCV } from "@stacks/transactions";
+import { CONTRACTS, NETWORK } from "@/lib/contracts";
+import { useStacksAuth } from "@/lib/stacksAuth";
 
-const ABI = [
-  {
-    name: "hasProfile",
-    type: "function",
-    inputs: [{ name: "user", type: "address" }],
-    outputs: [{ type: "bool" }],
-    stateMutability: "view",
-  },
-  {
-    name: "profileHash",
-    type: "function",
-    inputs: [{ name: "", type: "address" }],
-    outputs: [{ type: "bytes32" }],
-    stateMutability: "view",
-  },
-] as const;
+const network = NETWORK;
 
-/**
- * useProfileAnchor
- *
- * Checks whether the connected user has anchored a profile commitment
- * and returns their current profile hash.
- */
 export function useProfileAnchor() {
-  const { address } = useAccount();
-  const chainId = useChainId();
-  const anchorAddress = (chainId === 42220 ? CONTRACTS.celo : CONTRACTS.alfajores).ProfileAnchor;
+  const { stxAddress } = useStacksAuth();
+  const [hasProfile, setHasProfile] = useState(false);
+  const [profileHash, setProfileHash] = useState<string>();
 
-  const { data: hasProfile } = useReadContract({
-    address: anchorAddress,
-    abi: ABI,
-    functionName: "hasProfile",
-    args: [address!],
-    query: { enabled: !!address && !!anchorAddress },
-  });
+  useEffect(() => {
+    if (!stxAddress) return;
+    const [addr, name] = CONTRACTS.profileAnchor.split(".");
+    callReadOnlyFunction({
+      contractAddress: addr,
+      contractName: name,
+      functionName: "get-profile-hash",
+      functionArgs: [principalCV(stxAddress)],
+      network,
+      senderAddress: stxAddress,
+    }).then(cv => {
+      const val = cvToValue(cv);
+      if (val !== null && val !== undefined) {
+        setHasProfile(true);
+        setProfileHash(typeof val === "string" ? val : JSON.stringify(val));
+      }
+    }).catch(() => {});
+  }, [stxAddress]);
 
-  const { data: profileHash } = useReadContract({
-    address: anchorAddress,
-    abi: ABI,
-    functionName: "profileHash",
-    args: [address!],
-    query: { enabled: !!address && !!anchorAddress },
-  });
-
-  return { hasProfile: hasProfile ?? false, profileHash };
+  return { hasProfile, profileHash };
 }
