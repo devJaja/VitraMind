@@ -1,50 +1,44 @@
 "use client";
 
-import { useAccount, useReadContract } from "wagmi";
-import { CONTRACTS } from "@/lib/contracts";
-
-const ABI = [{
-  name: "latestExport", type: "function",
-  inputs: [{ name: "user", type: "address" }],
-  outputs: [{
-    type: "tuple",
-    components: [
-      { name: "cid",         type: "string"  },
-      { name: "contentHash", type: "bytes32" },
-      { name: "exportType",  type: "uint8"   },
-      { name: "timestamp",   type: "uint256" },
-    ],
-  }],
-  stateMutability: "view",
-}, {
-  name: "exportCount", type: "function",
-  inputs: [{ name: "user", type: "address" }],
-  outputs: [{ type: "uint256" }],
-  stateMutability: "view",
-}] as const;
+import { useEffect, useState } from "react";
+import { callReadOnlyFunction, cvToValue, principalCV } from "@stacks/transactions";
+import { CONTRACTS, NETWORK } from "@/lib/contracts";
+import { useStacksAuth } from "@/lib/stacksAuth";
 
 const EXPORT_TYPES = ["FULL", "LOGS", "INSIGHTS", "ANALYTICS"] as const;
 
 export function useIPFSExport() {
-  const { address } = useAccount();
-  const addr = CONTRACTS.celo.IPFSExportRegistry;
+  const { stxAddress } = useStacksAuth();
+  const [latestCID, setLatestCID]     = useState<string>();
+  const [exportType, setExportType]   = useState<string>();
+  const [exportedAt, setExportedAt]   = useState<number>();
+  const [exportCount, setExportCount] = useState(0);
 
-  const { data: latest } = useReadContract({
-    address: addr, abi: ABI, functionName: "latestExport",
-    args: [address!], query: { enabled: !!address && !!addr },
-  });
+  useEffect(() => {
+    if (!stxAddress) return;
+    const [addr, name] = CONTRACTS.ipfsExportRegistry.split(".");
 
-  const { data: count } = useReadContract({
-    address: addr, abi: ABI, functionName: "exportCount",
-    args: [address!], query: { enabled: !!address && !!addr },
-  });
+    callReadOnlyFunction({
+      contractAddress: addr, contractName: name,
+      functionName: "get-export-count",
+      functionArgs: [principalCV(stxAddress)],
+      network: NETWORK, senderAddress: stxAddress,
+    }).then(cv => setExportCount(Number(cvToValue(cv) ?? 0))).catch(() => {});
 
-  const entry = latest as { cid: string; contentHash: string; exportType: number; timestamp: bigint } | undefined;
+    callReadOnlyFunction({
+      contractAddress: addr, contractName: name,
+      functionName: "latest-export",
+      functionArgs: [principalCV(stxAddress)],
+      network: NETWORK, senderAddress: stxAddress,
+    }).then(cv => {
+      const val = cvToValue(cv) as { value?: { cid?: string; "export-type"?: bigint; timestamp?: bigint } } | null;
+      if (val?.value) {
+        setLatestCID(val.value.cid);
+        setExportType(EXPORT_TYPES[Number(val.value["export-type"] ?? 0)]);
+        setExportedAt(Number(val.value.timestamp ?? 0));
+      }
+    }).catch(() => {});
+  }, [stxAddress]);
 
-  return {
-    latestCID:    entry?.cid,
-    exportType:   entry ? EXPORT_TYPES[entry.exportType] : undefined,
-    exportedAt:   entry?.timestamp,
-    exportCount:  count ?? BigInt(0),
-  };
+  return { latestCID, exportType, exportedAt, exportCount };
 }
