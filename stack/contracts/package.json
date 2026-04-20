@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "check": "cd clarity && clarinet check",
-    "test": "cd clarity && npm install && npm test",
+    "test": "cd clarity && clarinet test",
     "deploy:testnet": "node scripts/deploy-stacks.js --network testnet",
-    "deploy:mainnet": "node scripts/deploy-stacks.js --network mainnet"
+    "deploy:mainnet": "node scripts/deploy-stacks.js --network mainnet",
+    "verify:testnet": "node scripts/verify-stacks.js --network testnet",
+    "verify:mainnet": "node scripts/verify-stacks.js --network mainnet"
   },
   "dependencies": {
     "@stacks/network": "^6.17.0",
