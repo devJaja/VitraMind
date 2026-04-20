@@ -1,9 +1,3 @@
-// Extend the Window interface to include MiniPay-specific ethereum properties
-interface Window {
-  ethereum?: {
-    isMiniPay?: boolean;
-    request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-    on: (event: string, handler: (...args: unknown[]) => void) => void;
-    removeListener: (event: string, handler: (...args: unknown[]) => void) => void;
-  };
-}
+// Stacks wallet providers (Leather, Xverse, etc.) inject into window
+// No custom window extensions needed — @stacks/connect handles detection
+export {};
