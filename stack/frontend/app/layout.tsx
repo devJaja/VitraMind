@@ -7,10 +7,9 @@ import { Header } from "@/components/Header";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "VitraMind — Personal Growth on Celo",
-  description: "Privacy-first habit tracking with verifiable on-chain proofs. Built for MiniPay.",
+  title: "VitraMind — Personal Growth on Stacks",
+  description: "Privacy-first habit tracking with verifiable on-chain proofs. Built on Bitcoin via Stacks.",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "VitraMind" },
-  other: { "minipay-app": "true" },
 };
 
 export const viewport: Viewport = {
@@ -18,7 +17,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#22c55e",
+  themeColor: "#f97316",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
