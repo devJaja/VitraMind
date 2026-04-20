@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
+import { useStacksAuth } from "@/lib/stacksAuth";
 import { getLogs } from "@/lib/logStorage";
 
 export function HabitHeatmap() {
-  const { address } = useAccount();
+  const { stxAddress: address } = useStacksAuth();
   const [cells, setCells] = useState<{ date: string; count: number }[]>([]);
 
   useEffect(() => {

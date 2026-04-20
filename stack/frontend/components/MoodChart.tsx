@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
+import { useStacksAuth } from "@/lib/stacksAuth";
 import { getLogs } from "@/lib/logStorage";
 
 const MOOD_EMOJI = ["", "😞", "😕", "😐", "🙂", "😄"];
 const MOOD_COLOR = ["", "bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-lime-500", "bg-green-500"];
 
 export function MoodChart() {
-  const { address } = useAccount();
+  const { stxAddress: address } = useStacksAuth();
   const [data, setData] = useState<{ date: string; mood: number }[]>([]);
 
   useEffect(() => {
