@@ -2,18 +2,15 @@
 
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider } from "wagmi";
-import { wagmiConfig } from "@/lib/wagmi";
+import { StacksAuthProvider } from "@/lib/stacksAuth";
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  // Must be inside useState — prevents sharing a single instance across SSR requests
   const [queryClient] = useState(() => new QueryClient());
-
   return (
-    <WagmiProvider config={wagmiConfig}>
+    <StacksAuthProvider>
       <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>
-    </WagmiProvider>
+    </StacksAuthProvider>
   );
 }
