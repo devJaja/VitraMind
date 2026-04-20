@@ -1,43 +1,33 @@
 "use client";
 
-import { useAccount, useReadContract } from "wagmi";
-import { CONTRACTS } from "@/lib/contracts";
-
-const ABI = [{
-  name: "hasActiveIdentity", type: "function",
-  inputs: [{ name: "user", type: "address" }],
-  outputs: [{ type: "bool" }],
-  stateMutability: "view",
-}, {
-  name: "identities", type: "function",
-  inputs: [{ name: "", type: "address" }],
-  outputs: [
-    { name: "commitment",  type: "bytes32" },
-    { name: "growthLevel", type: "uint8"   },
-    { name: "publishedAt", type: "uint256" },
-    { name: "active",      type: "bool"    },
-  ],
-  stateMutability: "view",
-}] as const;
+import { useEffect, useState } from "react";
+import { callReadOnlyFunction, cvToValue, principalCV } from "@stacks/transactions";
+import { CONTRACTS, NETWORK } from "@/lib/contracts";
+import { useStacksAuth } from "@/lib/stacksAuth";
 
 export function useGrowthIdentity() {
-  const { address } = useAccount();
-  const addr = CONTRACTS.celo.GrowthIdentity;
+  const { stxAddress } = useStacksAuth();
+  const [hasIdentity, setHasIdentity]   = useState(false);
+  const [growthLevel, setGrowthLevel]   = useState<number>();
+  const [publishedAt, setPublishedAt]   = useState<number>();
 
-  const { data: hasIdentity } = useReadContract({
-    address: addr, abi: ABI, functionName: "hasActiveIdentity",
-    args: [address!], query: { enabled: !!address && !!addr },
-  });
+  useEffect(() => {
+    if (!stxAddress) return;
+    const [addr, name] = CONTRACTS.growthIdentity.split(".");
+    callReadOnlyFunction({
+      contractAddress: addr, contractName: name,
+      functionName: "get-identity",
+      functionArgs: [principalCV(stxAddress)],
+      network: NETWORK, senderAddress: stxAddress,
+    }).then(cv => {
+      const val = cvToValue(cv) as { "growth-level"?: bigint; "published-at"?: bigint; active?: boolean } | null;
+      if (val && val.active) {
+        setHasIdentity(true);
+        setGrowthLevel(Number(val["growth-level"] ?? 0));
+        setPublishedAt(Number(val["published-at"] ?? 0));
+      }
+    }).catch(() => {});
+  }, [stxAddress]);
 
-  const { data: identity } = useReadContract({
-    address: addr, abi: ABI, functionName: "identities",
-    args: [address!], query: { enabled: !!address && !!addr },
-  });
-
-  return {
-    hasIdentity: hasIdentity ?? false,
-    growthLevel: identity?.[1],
-    publishedAt: identity?.[2],
-    active:      identity?.[3],
-  };
+  return { hasIdentity, growthLevel, publishedAt };
 }
