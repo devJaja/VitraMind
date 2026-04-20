@@ -1,39 +1,34 @@
 "use client";
 
-import { useAccount, useReadContract } from "wagmi";
-import { CONTRACTS } from "@/lib/contracts";
-
-const ABI = [{
-  name: "latestSnapshot", type: "function",
-  inputs: [{ name: "user", type: "address" }, { name: "period", type: "uint8" }],
-  outputs: [{
-    type: "tuple",
-    components: [
-      { name: "digestHash", type: "bytes32" },
-      { name: "period",     type: "uint8"   },
-      { name: "timestamp",  type: "uint256" },
-    ],
-  }],
-  stateMutability: "view",
-}] as const;
+import { useEffect, useState } from "react";
+import { callReadOnlyFunction, cvToValue, principalCV, uintCV } from "@stacks/transactions";
+import { CONTRACTS, NETWORK } from "@/lib/contracts";
+import { useStacksAuth } from "@/lib/stacksAuth";
 
 export function useAnalyticsRegistry() {
-  const { address } = useAccount();
-  const addr = CONTRACTS.celo.AnalyticsRegistry;
+  const { stxAddress } = useStacksAuth();
+  const [weeklySnapshot, setWeeklySnapshot]   = useState<{ digestHash: string; timestamp: number } | undefined>();
+  const [monthlySnapshot, setMonthlySnapshot] = useState<{ digestHash: string; timestamp: number } | undefined>();
 
-  const { data: weekly } = useReadContract({
-    address: addr, abi: ABI, functionName: "latestSnapshot",
-    args: [address!, 0], query: { enabled: !!address && !!addr },
-  });
+  useEffect(() => {
+    if (!stxAddress) return;
+    const [addr, name] = CONTRACTS.analyticsRegistry.split(".");
 
-  const { data: monthly } = useReadContract({
-    address: addr, abi: ABI, functionName: "latestSnapshot",
-    args: [address!, 1], query: { enabled: !!address && !!addr },
-  });
+    for (const period of [0, 1] as const) {
+      callReadOnlyFunction({
+        contractAddress: addr, contractName: name,
+        functionName: "latest-snapshot",
+        functionArgs: [principalCV(stxAddress), uintCV(period)],
+        network: NETWORK, senderAddress: stxAddress,
+      }).then(cv => {
+        const val = cvToValue(cv) as { value?: { "digest-hash"?: string; timestamp?: bigint } } | null;
+        if (val?.value) {
+          const snap = { digestHash: String(val.value["digest-hash"] ?? ""), timestamp: Number(val.value.timestamp ?? 0) };
+          period === 0 ? setWeeklySnapshot(snap) : setMonthlySnapshot(snap);
+        }
+      }).catch(() => {});
+    }
+  }, [stxAddress]);
 
-  type Snap = { digestHash: string; period: number; timestamp: bigint };
-  return {
-    weeklySnapshot:  weekly  as Snap | undefined,
-    monthlySnapshot: monthly as Snap | undefined,
-  };
+  return { weeklySnapshot, monthlySnapshot };
 }
