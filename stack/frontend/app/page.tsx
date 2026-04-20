@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount, useChainId } from "wagmi";
+import { useStacksAuth } from "@/lib/stacksAuth";
 import { Dashboard } from "@/components/Dashboard";
 import { MoodChart } from "@/components/MoodChart";
 import { HabitHeatmap } from "@/components/HabitHeatmap";
@@ -10,72 +10,49 @@ import { HistoryTab } from "@/components/HistoryTab";
 import { AITab } from "@/components/AITab";
 import { ProofsTab } from "@/components/ProofsTab";
 import { ProfileAnchorCard, StreakAnchorCard, IPFSExportCard, GrowthIdentityCard, WellnessProtocolCard } from "@/components/ContractActions";
-import { useRewards } from "@/hooks/useRewards";
 import { useToast } from "@/components/Toast";
-import { formatCUSD } from "@/lib/format";
-import { CONTRACTS, celoscanAddr } from "@/lib/contracts";
+import { CONTRACTS, NETWORK, explorerTx } from "@/lib/contracts";
 
-const contracts = CONTRACTS.celo;
 const TABS = ["Log", "AI", "History", "Proofs", "Profile", "Streak", "Identity", "Wellness", "Export"] as const;
 type Tab = typeof TABS[number];
 
-function RewardsBar() {
-  const { points, claimedCUSD, highestStreakRewarded } = useRewards();
-  return (
-    <div className="grid grid-cols-3 gap-2">
-      {[
-        { label: "Points",      value: points.toString() },
-        { label: "cUSD Earned", value: formatCUSD(claimedCUSD) },
-        { label: "Best Streak", value: `${highestStreakRewarded}d` },
-      ].map(({ label, value }) => (
-        <div key={label} className="bg-gray-800/60 rounded-xl p-3 text-center">
-          <p className="text-xs text-gray-500 mb-0.5">{label}</p>
-          <p className="text-sm font-bold text-white">{value}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function Home() {
-  const { isConnected } = useAccount();
-  const chainId = useChainId();
+  const { isConnected } = useStacksAuth();
   const [tab, setTab] = useState<Tab>("Log");
   const [historyKey, setHistoryKey] = useState(0);
   const { show: showToast, node: toastNode } = useToast();
 
   function handleLogSaved() {
     setHistoryKey(k => k + 1);
-    showToast("✓ Log anchored on Celo!", "success");
+    showToast("✓ Log anchored on Stacks!", "success");
   }
 
   return (
     <div className="space-y-6">
 
       {/* Hero */}
-      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-green-950 via-gray-900 to-black border border-green-900/40 p-6 pt-8">
-        <div className="absolute -top-10 -right-10 w-48 h-48 bg-green-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-        <p className="text-xs font-semibold text-green-400 uppercase tracking-widest mb-2">Privacy-first · On-chain proofs</p>
+      <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-orange-950 via-gray-900 to-black border border-orange-900/40 p-6 pt-8">
+        <div className="absolute -top-10 -right-10 w-48 h-48 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-8 -left-8 w-36 h-36 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+        <p className="text-xs font-semibold text-orange-400 uppercase tracking-widest mb-2">Privacy-first · Bitcoin-secured</p>
         <h1 className="text-3xl font-extrabold text-white leading-tight mb-2">
           Grow every day.<br />
-          <span className="bg-gradient-to-r from-green-400 to-emerald-300 bg-clip-text text-transparent">Prove it on Celo.</span>
+          <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent">Prove it on Bitcoin.</span>
         </h1>
         <p className="text-sm text-gray-400 max-w-xs">Track habits, moods & reflections. AI insights powered by Gemini. Only cryptographic proofs touch the blockchain.</p>
-        <div className="mt-4 inline-flex items-center gap-1.5 bg-black/40 border border-green-900/50 rounded-full px-3 py-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-xs text-green-400 font-medium">{chainId === 42220 ? "Celo Mainnet" : "Celo (switching…)"}</span>
+        <div className="mt-4 inline-flex items-center gap-1.5 bg-black/40 border border-orange-900/50 rounded-full px-3 py-1">
+          <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+          <span className="text-xs text-orange-400 font-medium">Stacks {NETWORK === "mainnet" ? "Mainnet" : "Testnet"}</span>
         </div>
       </div>
 
-      {/* Dashboard + Rewards */}
+      {/* Dashboard */}
       {isConnected && (
         <section className="space-y-3">
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Your Growth</p>
           <Dashboard onViewProofs={() => setTab("Proofs")} />
           <MoodChart />
           <HabitHeatmap />
-          <RewardsBar />
         </section>
       )}
 
@@ -84,7 +61,7 @@ export default function Home() {
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`shrink-0 text-xs px-3 py-1.5 rounded-full font-semibold transition-all ${
-              tab === t ? "bg-green-500 text-black" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+              tab === t ? "bg-orange-500 text-black" : "bg-gray-800 text-gray-400 hover:bg-gray-700"
             }`}>
             {t}
           </button>
@@ -95,7 +72,7 @@ export default function Home() {
       <div>
         {tab === "Log" && (
           <div className="rounded-2xl overflow-hidden border border-gray-800 bg-gradient-to-b from-gray-900 to-black p-5">
-            <DailyLogForm proofRegistryAddress={contracts.ProofRegistry} onLogSaved={handleLogSaved} />
+            <DailyLogForm proofRegistryAddress={CONTRACTS.proofRegistry} onLogSaved={handleLogSaved} />
           </div>
         )}
         {tab === "History"  && <HistoryTab refreshKey={historyKey} />}
@@ -109,13 +86,7 @@ export default function Home() {
       </div>
 
       <p className="text-xs text-gray-700 text-center pb-4">
-        Raw data never leaves your device ·{" "}
-        <a href={celoscanAddr(contracts.ProofRegistry!)} target="_blank" rel="noopener noreferrer"
-          className="text-gray-500 hover:text-green-400 transition-colors underline underline-offset-2">
-          View ProofRegistry ↗
-        </a>
-        {" · "}
-        <span className="text-gray-700">v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
+        Raw data never leaves your device · Secured by Bitcoin via Stacks
       </p>
       {toastNode}
     </div>
