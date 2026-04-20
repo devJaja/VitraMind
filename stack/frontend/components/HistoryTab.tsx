@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useAccount } from "wagmi";
+import { useStacksAuth } from "@/lib/stacksAuth";
 import { getLogs, deleteLog, exportLogs, getMoodAverage, type LogEntry } from "@/lib/logStorage";
+import { explorerTx } from "@/lib/contracts";
 
 const MOODS = ["", "😞", "😕", "😐", "🙂", "😄"];
 
@@ -55,11 +56,11 @@ function LogCard({ entry, onDelete }: { entry: LogEntry; onDelete: () => void })
           <div className="flex gap-3 flex-wrap items-center justify-between">
             <div className="flex gap-3 flex-wrap">
               {entry.logTxHash && (
-                <a href={`https://celoscan.io/tx/${entry.logTxHash}`} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-green-500 hover:text-green-400 underline">Log tx ↗</a>
+                <a href={explorerTx(entry.logTxHash)} target="_blank" rel="noopener noreferrer"
+                  className="text-xs text-orange-500 hover:text-orange-400 underline">Log tx ↗</a>
               )}
               {entry.insightTxHash && (
-                <a href={`https://celoscan.io/tx/${entry.insightTxHash}`} target="_blank" rel="noopener noreferrer"
+                <a href={explorerTx(entry.insightTxHash)} target="_blank" rel="noopener noreferrer"
                   className="text-xs text-purple-400 hover:text-purple-300 underline">Insight tx ↗</a>
               )}
             </div>
@@ -72,7 +73,7 @@ function LogCard({ entry, onDelete }: { entry: LogEntry; onDelete: () => void })
 }
 
 export function HistoryTab({ refreshKey }: { refreshKey?: number }) {
-  const { address } = useAccount();
+  const { stxAddress: address } = useStacksAuth();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [moodAvg, setMoodAvg] = useState(0);
 

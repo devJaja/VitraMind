@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
+import { useStacksAuth } from "@/lib/stacksAuth";
 import { getLogs } from "@/lib/logStorage";
 
 const QUICK_QUESTIONS = [
@@ -27,7 +27,7 @@ function InsightBlock({ text }: { text: string }) {
 }
 
 export function AITab({ refreshKey }: { refreshKey?: number }) {
-  const { address } = useAccount();
+  const { stxAddress: address } = useStacksAuth();
   const [logCount, setLogCount] = useState(0);
   const [weekly, setWeekly]     = useState<string>();
   const [weeklyLoading, setWeeklyLoading] = useState(false);
