@@ -12,7 +12,8 @@
     "interact:stacks": "node scripts/interact-stacks.js",
     "interact:celo": "node scripts/interact.js",
     "verify:testnet": "node scripts/verify-stacks.js --network testnet",
-    "verify:mainnet": "node scripts/verify-stacks.js --network mainnet"
+    "verify:mainnet": "node scripts/verify-stacks.js --network mainnet",
+    "lint:clarity": "cd clarity && clarinet check --manifest Clarinet.toml"
   },
   "dependencies": {
     "@stacks/network": "^6.17.0",
