@@ -15,6 +15,10 @@ export const CONTRACTS = {
   ipfsExportRegistry: `${DEPLOYER}.ipfs-export-registry`,
   growthIdentity:     `${DEPLOYER}.growth-identity`,
   wellnessProtocol:   `${DEPLOYER}.wellness-protocol`,
+  goalTracker:        `${DEPLOYER}.goal-tracker`,
+  moodOracle:         `${DEPLOYER}.mood-oracle`,
+  rewardVault:        `${DEPLOYER}.reward-vault`,
+  leaderboard:        `${DEPLOYER}.leaderboard`,
 } as const;
 
 export const NETWORK = process.env.NEXT_PUBLIC_STACKS_NETWORK ?? "testnet";
