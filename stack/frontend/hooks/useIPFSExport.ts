@@ -5,14 +5,12 @@ import { callReadOnlyFunction, cvToValue, principalCV } from "@stacks/transactio
 import { CONTRACTS, NETWORK } from "@/lib/contracts";
 import { useStacksAuth } from "@/lib/stacksAuth";
 
-const EXPORT_TYPES = ["FULL", "LOGS", "INSIGHTS", "ANALYTICS"] as const;
-
 export function useIPFSExport() {
   const { stxAddress } = useStacksAuth();
+  const [exportCount, setExportCount] = useState(0);
   const [latestCID, setLatestCID]     = useState<string>();
   const [exportType, setExportType]   = useState<string>();
   const [exportedAt, setExportedAt]   = useState<number>();
-  const [exportCount, setExportCount] = useState(0);
 
   useEffect(() => {
     if (!stxAddress) return;
@@ -31,14 +29,15 @@ export function useIPFSExport() {
       functionArgs: [principalCV(stxAddress)],
       network: NETWORK, senderAddress: stxAddress,
     }).then(cv => {
-      const val = cvToValue(cv) as { value?: { cid?: string; "export-type"?: bigint; timestamp?: bigint } } | null;
+      const val = cvToValue(cv) as { value?: Record<string, unknown> } | null;
       if (val?.value) {
-        setLatestCID(val.value.cid);
-        setExportType(EXPORT_TYPES[Number(val.value["export-type"] ?? 0)]);
-        setExportedAt(Number(val.value.timestamp ?? 0));
+        setLatestCID(String(val.value["cid"] ?? ""));
+        const TYPES = ["FULL", "LOGS", "INSIGHTS", "ANALYTICS"];
+        setExportType(TYPES[Number(val.value["export-type"] ?? 0)]);
+        setExportedAt(Number(val.value["timestamp"] ?? 0));
       }
     }).catch(() => {});
   }, [stxAddress]);
 
-  return { latestCID, exportType, exportedAt, exportCount };
+  return { exportCount, latestCID, exportType, exportedAt };
 }
