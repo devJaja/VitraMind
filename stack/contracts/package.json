@@ -7,12 +7,17 @@
     "test": "cd clarity && clarinet test",
     "deploy:testnet": "node scripts/deploy-stacks.js --network testnet",
     "deploy:mainnet": "node scripts/deploy-stacks.js --network mainnet",
+    "deploy:phase4:testnet": "node scripts/deploy-phase4.js --network testnet",
+    "deploy:phase4:mainnet": "node scripts/deploy-phase4.js --network mainnet",
+    "interact:stacks": "node scripts/interact-stacks.js",
+    "interact:celo": "node scripts/interact.js",
     "verify:testnet": "node scripts/verify-stacks.js --network testnet",
     "verify:mainnet": "node scripts/verify-stacks.js --network mainnet"
   },
   "dependencies": {
     "@stacks/network": "^6.17.0",
     "@stacks/transactions": "^6.17.0",
-    "dotenv": "^16.4.0"
+    "dotenv": "^16.6.1",
+    "ethers": "^6.16.0"
   }
 }

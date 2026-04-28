@@ -33,6 +33,22 @@ epoch = "3.1"
 path = "contracts/wellness-protocol.clar"
 epoch = "3.1"
 
+[contracts.goal-tracker]
+path = "contracts/goal-tracker.clar"
+epoch = "3.1"
+
+[contracts.mood-oracle]
+path = "contracts/mood-oracle.clar"
+epoch = "3.1"
+
+[contracts.reward-vault]
+path = "contracts/reward-vault.clar"
+epoch = "3.1"
+
+[contracts.leaderboard]
+path = "contracts/leaderboard.clar"
+epoch = "3.1"
+
 [repl.analysis]
 passes = ["check_checker"]
 check_checker = { trusted_sender = false, trusted_caller = false, callee_filter = false }
