@@ -1,0 +1,40 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Node
+node_modules/
+
+# Build artifacts
+dist/
+build/
+out/
+.next/
+
+# Hardhat / Foundry
+artifacts/
+cache/
+typechain-types/
+
+# ZK trusted-setup keys (large binaries)
+zk/keys/
+zk/build/
+
+# Deployment manifests (contain no secrets but are environment-specific)
+deployments.*.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Editor
+.vscode/
+.idea/
+*.swp
