@@ -12,6 +12,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **MoodOracle** Clarity contract — aggregated weekly mood digest anchoring (no raw scores on-chain)
 - **RewardVault** Clarity contract — STX milestone rewards (7/30/100-day streaks) with claim pattern
 - **Leaderboard** Clarity contract — opt-in privacy-preserving streak rankings with alias system
+- **NotificationRegistry** Clarity contract — on-chain notification preferences and milestone events
+- **HabitCommitment** Clarity contract — frequency-based habit commitments with check-ins and completion rate
 - `deploy-phase4.js` — deploy script for all Phase-4 Clarity contracts
 - `interact-stacks.js` — 113-interaction Stacks Bitcoin mainnet script covering all 7 contracts
 - `useGoalTracker`, `useLeaderboard`, `useRewardVault` frontend hooks
