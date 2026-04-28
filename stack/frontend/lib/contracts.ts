@@ -1,11 +1,13 @@
 /**
  * Stacks contract identifiers.
  * Format: <deployer-STX-address>.<contract-name>
- * Update DEPLOYER after running deploy-stacks.js.
+ * Update NEXT_PUBLIC_STACKS_DEPLOYER in .env.local after deploying.
  */
 
 export const DEPLOYER =
   process.env.NEXT_PUBLIC_STACKS_DEPLOYER ?? "ST000000000000000000002AMW42H";
+
+export const CONTRACTS = {
 
 export const CONTRACTS = {
   profileAnchor:      `${DEPLOYER}.profile-anchor`,
@@ -23,7 +25,7 @@ export const CONTRACTS = {
   habitCommitment:    `${DEPLOYER}.habit-commitment`,
 } as const;
 
-export const NETWORK = process.env.NEXT_PUBLIC_STACKS_NETWORK ?? "testnet";
+export const NETWORK = process.env.NEXT_PUBLIC_STACKS_NETWORK ?? "mainnet";
 
 export const EXPLORER_BASE =
   NETWORK === "mainnet"
@@ -32,4 +34,8 @@ export const EXPLORER_BASE =
 
 export function explorerTx(txid: string) {
   return `${EXPLORER_BASE}/txid/${txid}`;
+}
+
+export function explorerAddress(address: string) {
+  return `${EXPLORER_BASE}/address/${address}`;
 }
