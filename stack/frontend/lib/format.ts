@@ -31,3 +31,31 @@ export function growthTierLabel(level: number): string {
   if (level >= 11) return "🌿 Sprout";
   return "🌱 Seedling";
 }
+
+/** Returns the tier number (1-5) for a given level */
+export function growthTierNumber(level: number): number {
+  if (level >= 76) return 5;
+  if (level >= 51) return 4;
+  if (level >= 26) return 3;
+  if (level >= 11) return 2;
+  return 1;
+}
+
+/** Formats micro-STX to STX string */
+export function microStxToStx(micro: number | bigint, decimals = 2): string {
+  return `${(Number(micro) / 1_000_000).toFixed(decimals)} STX`;
+}
+
+/** Formats a Stacks block height to an approximate date string */
+export function blockToApproxDate(block: number): string {
+  // Stacks mainnet genesis ~Jan 2021, ~10 min/block
+  const GENESIS_MS = 1610000000000;
+  const approx = new Date(GENESIS_MS + block * 10 * 60 * 1000);
+  return approx.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+/** Truncates a Stacks address for display */
+export function shortStxAddress(address: string, chars = 4): string {
+  if (!address || address.length < chars * 2 + 3) return address;
+  return `${address.slice(0, chars + 2)}…${address.slice(-chars)}`;
+}
