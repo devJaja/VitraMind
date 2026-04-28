@@ -19,6 +19,8 @@ export const CONTRACTS = {
   moodOracle:         `${DEPLOYER}.mood-oracle`,
   rewardVault:        `${DEPLOYER}.reward-vault`,
   leaderboard:        `${DEPLOYER}.leaderboard`,
+  notificationRegistry: `${DEPLOYER}.notification-registry`,
+  habitCommitment:    `${DEPLOYER}.habit-commitment`,
 } as const;
 
 export const NETWORK = process.env.NEXT_PUBLIC_STACKS_NETWORK ?? "testnet";
