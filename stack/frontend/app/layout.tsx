@@ -7,8 +7,15 @@ import { Header } from "@/components/Header";
 const geist = Geist({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "VitraMind — Personal Growth on Stacks",
-  description: "Privacy-first habit tracking with verifiable on-chain proofs. Built on Bitcoin via Stacks.",
+  title: "VitraMind — Personal Growth on Bitcoin",
+  description: "Privacy-first habit tracking with verifiable on-chain proofs. Secured by Bitcoin via Stacks.",
+  keywords: ["habit tracking", "personal growth", "Bitcoin", "Stacks", "privacy", "blockchain", "wellness"],
+  authors: [{ name: "VitraMind" }],
+  openGraph: {
+    title: "VitraMind — Personal Growth on Bitcoin",
+    description: "Track habits, moods & reflections. Only cryptographic proofs touch the blockchain.",
+    type: "website",
+  },
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "VitraMind" },
 };
 
